@@ -9,14 +9,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.io.File;
-import java.nio.file.Path;
 import java.util.concurrent.Executor;
 
 
 @ApplicationScoped
-public class FileHandler {
+public class RequestProcessor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(FileHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestProcessor.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
 
     public Uni<OperationResponse> handleFileUpload(FormData formData) {
@@ -27,13 +26,20 @@ public class FileHandler {
 
     private OperationResponse processFile(FormData formData) {
 
-        var absoluteFilePath = formData.getfilePath();
-        File spaDistribution = new File(absoluteFilePath.toUri());
-        assert spaDistribution.exists();
+        var zipFilePath = formData.getfilePath().toString();
+
+
+
 
 
         return null;
     }
 
+    private void isSpaDirExists(String dirName){
+    }
+    private void createSpaDirectory(String dirName){
+    }
+    private void updateSpaDirectory(String dirName, File spa){
+    }
 
 }

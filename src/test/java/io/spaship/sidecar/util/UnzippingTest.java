@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -33,13 +34,10 @@ class UnzippingTest {
 
         ZipOutputStream out = new ZipOutputStream(new FileOutputStream(sourceFile));
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Test String");
-
         ZipEntry e = new ZipEntry("mytext.txt");
         out.putNextEntry(e);
 
-        byte[] data = sb.toString().getBytes();
+        byte[] data = ("Test String"+ UUID.randomUUID().toString()).getBytes();
         out.write(data, 0, data.length);
         out.closeEntry();
         out.close();
@@ -73,7 +71,7 @@ class UnzippingTest {
 
         String dest = null;
         try {
-            dest = Unzip.unzip(zipFIlePath, destDirPath);
+            dest = CommonOps.unzip(zipFIlePath, destDirPath);
         } catch (Exception ex) {
             // some errors occurred
             ex.printStackTrace();

@@ -1,7 +1,7 @@
 package io.spaship.sidecar.api;
 
 import io.smallrye.mutiny.Uni;
-import io.spaship.sidecar.services.FileHandler;
+import io.spaship.sidecar.services.RequestProcessor;
 import io.spaship.sidecar.type.FormData;
 import io.spaship.sidecar.type.OperationResponse;
 import org.jboss.resteasy.reactive.MultipartForm;
@@ -10,16 +10,17 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.io.File;
 import java.util.Objects;
 
 @Path("upload")
 public class SpaUploadController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SpaUploadController.class);
-    private final FileHandler fileHandlerService;
+    private final RequestProcessor requestProcessorService;
 
-    public SpaUploadController(FileHandler fileHandlerService) {
-        this.fileHandlerService = fileHandlerService;
+    public SpaUploadController(RequestProcessor requestProcessorService) {
+        this.requestProcessorService = requestProcessorService;
     }
 
 
@@ -36,7 +37,7 @@ public class SpaUploadController {
     public Uni<OperationResponse> uploadSPA(@MultipartForm FormData formData) {
 
         validate(formData);
-        return fileHandlerService.handleFileUpload(formData);
+        return requestProcessorService.handleFileUpload(formData);
     }
 
     private void validate(FormData formData) {
@@ -52,5 +53,6 @@ public class SpaUploadController {
                 fileName, fileSize, path);
 
     }
+
 
 }
