@@ -39,6 +39,24 @@ public class Environment {
         return new EnvironmentBuilder();
     }
 
+    @Override
+    public String toString() {
+        return "{"
+                + "\"name\":\"" + name + "\""
+                + ", \"websiteName\":\"" + websiteName + "\""
+                + ", \"traceID\":" + traceID
+                + ", \"nameSpace\":\"" + nameSpace + "\""
+                + ", \"updateRestriction\":\"" + updateRestriction + "\""
+                + ", \"zipFileLocation\":" + zipFileLocation
+                + ", \"websiteVersion\":\"" + websiteVersion + "\""
+                + ", \"spaName\":\"" + spaName + "\""
+                + ", \"spaContextPath\":\"" + spaContextPath + "\""
+                + ", \"branch\":\"" + branch + "\""
+                + ", \"excludeFromEnvironment\":\"" + excludeFromEnvironment + "\""
+                + ", \"operationPerformed\":\"" + operationPerformed + "\""
+                + ", \"identification\":\"" + identification + "\""
+                + "}";
+    }
 
     public static class EnvironmentBuilder {
         private String name;
@@ -68,7 +86,7 @@ public class Environment {
             return this;
         }
 
-        private String refactorWebsiteName(String website){
+        private String refactorWebsiteName(String website) {
             var modifiedWebsiteName = website.replace(".", "-");
             modifiedWebsiteName = modifiedWebsiteName.replace("_", "-");
             return modifiedWebsiteName;
@@ -148,24 +166,5 @@ public class Environment {
                     + ", \"identification\":\"" + identification + "\""
                     + "}";
         }
-    }
-
-    @Override
-    public String toString() {
-        return "{"
-                + "\"name\":\"" + name + "\""
-                + ", \"websiteName\":\"" + websiteName + "\""
-                + ", \"traceID\":" + traceID
-                + ", \"nameSpace\":\"" + nameSpace + "\""
-                + ", \"updateRestriction\":\"" + updateRestriction + "\""
-                + ", \"zipFileLocation\":" + zipFileLocation
-                + ", \"websiteVersion\":\"" + websiteVersion + "\""
-                + ", \"spaName\":\"" + spaName + "\""
-                + ", \"spaContextPath\":\"" + spaContextPath + "\""
-                + ", \"branch\":\"" + branch + "\""
-                + ", \"excludeFromEnvironment\":\"" + excludeFromEnvironment + "\""
-                + ", \"operationPerformed\":\"" + operationPerformed + "\""
-                + ", \"identification\":\"" + identification + "\""
-                + "}";
     }
 }

@@ -4,7 +4,6 @@ package io.spaship.sidecar.type;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
-
 import java.net.URI;
 import java.nio.file.Path;
 

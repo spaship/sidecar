@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.io.File;
 import java.util.Objects;
 
 @Path("upload")

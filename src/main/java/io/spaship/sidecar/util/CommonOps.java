@@ -1,15 +1,10 @@
 package io.spaship.sidecar.util;
 
 
-import io.spaship.sidecar.services.RequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,21 +13,20 @@ import java.util.zip.ZipInputStream;
 
 public class CommonOps {
 
-    private CommonOps(){}
-
-
     private static final int BUFFER_SIZE = 4096;
     private static final AtomicLong LAST_TIME_MS = new AtomicLong();
     private static final Logger LOG = LoggerFactory.getLogger(CommonOps.class);
+    private CommonOps() {
+    }
 
     public static String unzip(String zipFilePath, String destDirectory) throws IOException {
 
-        if(Objects.isNull(destDirectory))
+        if (Objects.isNull(destDirectory))
             destDirectory = System.getProperty("java.io.tmpdir")
                     .concat(FileSystems.getDefault().getSeparator())
                     .concat(Long.toString(uniqueCurrentTimeMS()));
 
-        LOG.debug("destination directory location is {}",destDirectory);
+        LOG.debug("destination directory location is {}", destDirectory);
 
         File destDir = new File(destDirectory);
         if (!destDir.exists()) {
@@ -70,13 +64,12 @@ public class CommonOps {
     }
 
 
-
     public static long uniqueCurrentTimeMS() {
         long now = System.currentTimeMillis();
-        while(true) {
+        while (true) {
             long lastTime = LAST_TIME_MS.get();
             if (lastTime >= now)
-                now = lastTime+1;
+                now = lastTime + 1;
             if (LAST_TIME_MS.compareAndSet(lastTime, now))
                 return now;
         }
