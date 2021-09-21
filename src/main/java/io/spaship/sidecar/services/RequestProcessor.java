@@ -38,14 +38,12 @@ public class RequestProcessor {
                 .runSubscriptionOn(executor);
     }
 
-    @SneakyThrows
+    @SneakyThrows //TODO break into multiple methods
     private OperationResponse processFile(FormData formData) {
 
         var zipFilePath = formData.getfilePath().toString();
         var unZippedPath = CommonOps.unzip(zipFilePath, null);
-
         var spashipMappingFleName = ConfigProvider.getConfig().getValue("spaship.mapping.file", String.class);
-
         var website = ConfigProvider.getConfig().getValue("sidecar.websitename", String.class);
         var environmentName = ConfigProvider.getConfig().getValue("sidecar.environmentname", String.class);
         var websiteVersion = ConfigProvider.getConfig().getValue("sidecar.website.version", String.class);
@@ -54,16 +52,14 @@ public class RequestProcessor {
                 .websiteName(website)
                 .websiteVersion(websiteVersion)
                 .build();
-
-        Objects.requireNonNull(website,"website is missing in the configuration");
-        Objects.requireNonNull(environmentName,"website is missing in the configuration");
-        Objects.requireNonNull(websiteVersion,"websiteVersion is missing in the configuration");
-
         var opsBuilderCommon = OperationResponse.builder()
                 .environment(environment)
                 .originatedFrom(this.getClass())
                 .sideCarServiceUrl(null);
 
+        Objects.requireNonNull(website,"website is missing in the configuration");
+        Objects.requireNonNull(environmentName,"website is missing in the configuration");
+        Objects.requireNonNull(websiteVersion,"websiteVersion is missing in the configuration");
         if(Objects.isNull(spashipMappingFleName))
             return opsBuilderCommon.status(0).errorMessage("spaship-mapping not found").build();
 
