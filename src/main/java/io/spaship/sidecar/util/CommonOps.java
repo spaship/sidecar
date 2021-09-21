@@ -1,21 +1,39 @@
 package io.spaship.sidecar.util;
 
-import lombok.SneakyThrows;
+
+import io.spaship.sidecar.services.RequestProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class CommonOps {
 
+    private CommonOps(){}
+
 
     private static final int BUFFER_SIZE = 4096;
+    private static final AtomicLong LAST_TIME_MS = new AtomicLong();
+    private static final Logger LOG = LoggerFactory.getLogger(CommonOps.class);
 
     public static String unzip(String zipFilePath, String destDirectory) throws IOException {
+
+        if(Objects.isNull(destDirectory))
+            destDirectory = System.getProperty("java.io.tmpdir")
+                    .concat(FileSystems.getDefault().getSeparator())
+                    .concat(Long.toString(uniqueCurrentTimeMS()));
+
+        LOG.debug("destination directory location is {}",destDirectory);
+
         File destDir = new File(destDirectory);
         if (!destDir.exists()) {
             destDir.mkdir();
@@ -52,57 +70,16 @@ public class CommonOps {
     }
 
 
-    @SneakyThrows
-    public static boolean unzipFIle(String zipFilePath, String destinationPath){
 
-        boolean success = false;
-        File destDir = new File(destinationPath);
-        byte[] buffer = new byte[BUFFER_SIZE];
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath))) {
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                File newFile = newFile(destDir, zipEntry);
-                if (zipEntry.isDirectory()) {
-                    if (!newFile.isDirectory() && !newFile.mkdirs()) {
-                        throw new IOException("Failed to create directory " + newFile);
-                    }
-                } else {
-                    // fix for Windows-created archives
-                    File parent = newFile.getParentFile();
-                    if (!parent.isDirectory() && !parent.mkdirs()) {
-                        throw new IOException("Failed to create directory " + parent);
-                    }
-
-                    // write file content
-                    try (FileOutputStream fos = new FileOutputStream(newFile)) {
-                        int len;
-                        while ((len = zis.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                    }
-                }
-                zipEntry = zis.getNextEntry();
-            }
-            success=true;
-        }catch (Exception e){
-            success = false;
+    public static long uniqueCurrentTimeMS() {
+        long now = System.currentTimeMillis();
+        while(true) {
+            long lastTime = LAST_TIME_MS.get();
+            if (lastTime >= now)
+                now = lastTime+1;
+            if (LAST_TIME_MS.compareAndSet(lastTime, now))
+                return now;
         }
-
-        return success;
-
-    }
-
-    private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
-        File destFile = new File(destinationDir, zipEntry.getName());
-
-        String destDirPath = destinationDir.getCanonicalPath();
-        String destFilePath = destFile.getCanonicalPath();
-
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
-        }
-
-        return destFile;
     }
 
 

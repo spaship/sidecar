@@ -83,5 +83,24 @@ class UnzippingTest {
         Assertions.assertTrue(destFile.exists(),"destination file not created");
     }
 
+    @Test
+    void testUnzipFunctionalityWhenDestIsNull() {
+
+        String dest = null;
+        try {
+            dest = CommonOps.unzip(zipFIlePath, null);
+        } catch (Exception ex) {
+            // some errors occurred
+            ex.printStackTrace();
+        }
+
+        System.out.println("destination directory is "+dest);
+
+        Assertions.assertNotNull(dest, "destination is null");
+        Assertions.assertFalse(destDirPath.isBlank(), "destDirPath must not be empty");
+        Assertions.assertTrue(sourceFile.exists(),"source zip file not found!");
+        Assertions.assertTrue(new File(dest).exists(),"destination file not created");
+    }
+
 }
 
