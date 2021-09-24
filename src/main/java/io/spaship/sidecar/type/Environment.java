@@ -167,4 +167,108 @@ public class Environment {
                     + "}";
         }
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getWebsiteName() {
+        return websiteName;
+    }
+
+    public void setWebsiteName(String websiteName) {
+        this.websiteName = websiteName;
+    }
+
+    public UUID getTraceID() {
+        return traceID;
+    }
+
+    public void setTraceID(UUID traceID) {
+        this.traceID = traceID;
+    }
+
+    public String getNameSpace() {
+        return nameSpace;
+    }
+
+    public void setNameSpace(String nameSpace) {
+        this.nameSpace = nameSpace;
+    }
+
+    public boolean isUpdateRestriction() {
+        return updateRestriction;
+    }
+
+    public void setUpdateRestriction(boolean updateRestriction) {
+        this.updateRestriction = updateRestriction;
+    }
+
+    public Path getZipFileLocation() {
+        return zipFileLocation;
+    }
+
+    public void setZipFileLocation(Path zipFileLocation) {
+        this.zipFileLocation = zipFileLocation;
+    }
+
+    public String getWebsiteVersion() {
+        return websiteVersion;
+    }
+
+    public void setWebsiteVersion(String websiteVersion) {
+        this.websiteVersion = websiteVersion;
+    }
+
+    public String getSpaName() {
+        return spaName;
+    }
+
+    public void setSpaName(String spaName) {
+        this.spaName = spaName;
+    }
+
+    public String getSpaContextPath() {
+        return spaContextPath;
+    }
+
+    public void setSpaContextPath(String spaContextPath) {
+        this.spaContextPath = spaContextPath;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
+
+    public boolean isExcludeFromEnvironment() {
+        return excludeFromEnvironment;
+    }
+
+    public void setExcludeFromEnvironment(boolean excludeFromEnvironment) {
+        this.excludeFromEnvironment = excludeFromEnvironment;
+    }
+
+    public boolean isOperationPerformed() {
+        return operationPerformed;
+    }
+
+    public void setOperationPerformed(boolean operationPerformed) {
+        this.operationPerformed = operationPerformed;
+    }
+
+    public String getIdentification() {
+        return identification;
+    }
+
+    public void setIdentification(String identification) {
+        this.identification = identification;
+    }
 }

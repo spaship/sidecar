@@ -44,6 +44,7 @@ public class RequestProcessor {
     @SneakyThrows //TODO break into multiple methods
     private OperationResponse processFile(FormData formData) {
 
+        // Collect information
         var zipFilePath = formData.getfilePath().toString();
         var unZippedPath = CommonOps.unzip(zipFilePath, null);
         var spashipMappingFleName = ConfigProvider.getConfig().getValue("spaship.mapping.file", String.class);
@@ -57,15 +58,17 @@ public class RequestProcessor {
                 .build();
         var opsBuilderCommon = OperationResponse.builder()
                 .environment(environment)
-                .originatedFrom(this.getClass())
+                .originatedFrom(this.getClass().toGenericString())
                 .sideCarServiceUrl(null);
 
+        // Data validation
         Objects.requireNonNull(website, "website is missing in the configuration");
         Objects.requireNonNull(environmentName, "website is missing in the configuration");
         Objects.requireNonNull(websiteVersion, "websiteVersion is missing in the configuration");
         if (Objects.isNull(spashipMappingFleName))
             return opsBuilderCommon.status(0).errorMessage("spaship-mapping not found").build();
 
+        // Extract and load SpashipMapping
         var path = unZippedPath.concat(File.separator).concat(spashipMappingFleName);
         LOG.debug("fully qualified spaship mapping is {}", path);
         SpashipMapping spaMapping = null;
@@ -76,35 +79,35 @@ public class RequestProcessor {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
 
+        // Collect deployment dir related information
         var contextPath = spaMapping.getContextPath();
         var parentDeploymentDirectory = ConfigProvider.getConfig().getValue("sidecar.spadir", String.class);
         var absoluteSpaPath = parentDeploymentDirectory.concat(File.separator).concat(contextPath);
         LOG.debug("computed absolute spa path is {}", absoluteSpaPath);
-
         int status = deleteIfExists(absoluteSpaPath);
-
         var sourcePath = Paths.get(unZippedPath);
         var destinationPath = Paths.get(absoluteSpaPath);
 
+        // Copy files from temporary place to the target directory
         try (var pathStream = Files.walk(sourcePath)) {
             pathStream.forEach(source -> copy(source, destinationPath.resolve(sourcePath.relativize(source))));
         } catch (Exception e) {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
 
+        // Build response
         LOG.debug("status is {}", status);
         if (status == 1) {
             LOG.debug("It was an existing SPA");
             opsBuilderCommon.status(2);
         }
-
         if (status == 0) {
             LOG.debug("It's a new SPA!");
             opsBuilderCommon.status(1);
         }
-
         var opsResponse = opsBuilderCommon.build();
         LOG.debug("ops response is {}", opsResponse);
+
         return opsResponse;
     }
 

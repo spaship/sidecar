@@ -7,9 +7,9 @@ public class OperationResponse {
     int status; //[-1] : restricted, [0] : skipped, [1] : created, [2] : modified, [3] : deleted
     String message;
     String errorMessage;
-    Class<?> originatedFrom;
+    String originatedFrom;
 
-    OperationResponse(Environment environment, String sideCarServiceUrl, int status, String message, String errorMessage, Class originatedFrom) {
+    OperationResponse(Environment environment, String sideCarServiceUrl, int status, String message, String errorMessage, String originatedFrom) {
         this.environment = environment;
         this.sideCarServiceUrl = sideCarServiceUrl;
         this.status = status;
@@ -42,7 +42,7 @@ public class OperationResponse {
         return this.errorMessage;
     }
 
-    public Class<?> getOriginatedFrom() {
+    public String getOriginatedFrom() {
         return this.originatedFrom;
     }
 
@@ -64,7 +64,7 @@ public class OperationResponse {
         private int status;
         private String message;
         private String errorMessage;
-        private Class<?> originatedFrom;
+        private String originatedFrom;
 
         OperationResponseBuilder() {
         }
@@ -108,7 +108,7 @@ public class OperationResponse {
             return this;
         }
 
-        public OperationResponseBuilder originatedFrom(Class<?> originatedFrom) {
+        public OperationResponseBuilder originatedFrom(String originatedFrom) {
             this.originatedFrom = originatedFrom;
             return this;
         }
@@ -128,5 +128,29 @@ public class OperationResponse {
                     + ", \"originatedFrom\":" + originatedFrom
                     + "}";
         }
+    }
+
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
+    public void setSideCarServiceUrl(String sideCarServiceUrl) {
+        this.sideCarServiceUrl = sideCarServiceUrl;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    public void setOriginatedFrom(String originatedFrom) {
+        this.originatedFrom = originatedFrom;
     }
 }
