@@ -8,12 +8,14 @@ import io.spaship.sidecar.type.OperationResponse;
 import io.spaship.sidecar.type.SpashipMapping;
 import io.spaship.sidecar.util.CommonOps;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,8 +33,16 @@ public class RequestProcessor {
     private final Executor executor = Infrastructure.getDefaultExecutor();
 
     static boolean delRecursive(File fileOrDir) {
-        return fileOrDir.isDirectory() ? Arrays.stream(Objects.requireNonNull(fileOrDir.listFiles()))
-                .allMatch(RequestProcessor::delRecursive) && fileOrDir.delete() : fileOrDir.delete();
+        var deleteStat = false;
+        try{
+            deleteStat = fileOrDir.isDirectory() ? Arrays.stream(Objects.requireNonNull(fileOrDir.listFiles()))
+                    .allMatch(RequestProcessor::delRecursive) && fileOrDir.delete() : fileOrDir.delete();
+        }catch(Exception e){
+            deleteStat = false;
+            e.printStackTrace();
+        }
+
+        return deleteStat;
     }
 
     public Uni<OperationResponse> handleFileUpload(FormData formData) {
@@ -84,7 +94,7 @@ public class RequestProcessor {
         var parentDeploymentDirectory = ConfigProvider.getConfig().getValue("sidecar.spadir", String.class);
         var absoluteSpaPath = parentDeploymentDirectory.concat(File.separator).concat(contextPath);
         LOG.debug("computed absolute spa path is {}", absoluteSpaPath);
-        int status = deleteIfExists(absoluteSpaPath);
+        int status = handleDir(absoluteSpaPath,parentDeploymentDirectory,contextPath);
         var sourcePath = Paths.get(unZippedPath);
         var destinationPath = Paths.get(absoluteSpaPath);
 
@@ -111,15 +121,31 @@ public class RequestProcessor {
         return opsResponse;
     }
 
-    @SneakyThrows
     private void copy(Path source, Path dest) {
-        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+        try{
+            Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){
+            e.printStackTrace();
+           System.exit(1);
+
+        }
     }
 
-    private int deleteIfExists(String dirName) {
+    private int handleDir(String dirName,String parentDirectory,String contextPath) {
+        var isNestedContextPath = contextPath.contains(File.separator);
+        LOG.debug("nested context path detection status {}",isNestedContextPath);
+
         if (isSpaDirExists(dirName)) {
             deleteDirectory(dirName);
             return 1;
+        }
+        LOG.debug("directory does not exists");
+        if(isNestedContextPath){
+            var recursiveDirectoryCreateStatus = new File(dirName).mkdirs();
+            LOG.debug("recursive dir create status is {}",recursiveDirectoryCreateStatus);
+        }else{
+            var directoryCreateStatus = new File(dirName).mkdir();
+            LOG.debug("dir create status is {}",directoryCreateStatus);
         }
         return 0;
     }
@@ -131,9 +157,20 @@ public class RequestProcessor {
         return exists;
     }
 
-    private void deleteDirectory(String dirName) {
+    private void deleteDirectory(String dirName){
         var dir = new File(dirName);
-        var deleted = delRecursive(dir);
+        var deleted = false;
+        try {
+            FileUtils.cleanDirectory(dir);
+            LOG.debug("Directory cleaned");
+            FileUtils.deleteDirectory(dir);
+            LOG.debug("Directory deleted");
+            deleted = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOG.error("Error file delete {} , on {}",e.getMessage(),e.getLocalizedMessage());
+        }
+
         LOG.debug("dir {} delete status is {}", dirName, deleted);
     }
 }
