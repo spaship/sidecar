@@ -6,6 +6,7 @@ import io.spaship.sidecar.type.Environment;
 import io.spaship.sidecar.type.FormData;
 import io.spaship.sidecar.type.OperationResponse;
 import io.spaship.sidecar.type.SpashipMapping;
+import io.spaship.sidecar.util.CheckedException;
 import io.spaship.sidecar.util.CommonOps;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -20,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -95,8 +95,14 @@ public class RequestProcessor {
 
         // Copy files from temporary place to the target directory
         try (var pathStream = Files.walk(sourcePath)) {
-            pathStream.forEach(source -> copyOps(parentDeploymentDirectory, status,
-                    sourcePath, destinationPath, source));
+            pathStream.forEach(source -> {
+                try {
+                    copyOps(parentDeploymentDirectory, status,
+                            sourcePath, destinationPath, source);
+                } catch (Exception e) {
+                    throw new CheckedException(e.getMessage());
+                }
+            });
         } catch (Exception e) {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
@@ -118,7 +124,8 @@ public class RequestProcessor {
     }
 
     private void copyOps(String parentDeploymentDirectory, int status, Path sourcePath, Path destinationPath,
-                         Path source) {
+                         Path source) throws IOException {
+        // To avoid DirectoryNotEmptyException
         if(status == -1 && destinationPath.resolve(sourcePath.relativize(source)).toAbsolutePath().toString()
                 .equalsIgnoreCase(parentDeploymentDirectory)){
             LOG.debug("copying into root dir and skipping the first iteration");
@@ -127,16 +134,11 @@ public class RequestProcessor {
         copy(source, destinationPath.resolve(sourcePath.relativize(source)));
     }
 
-    private void copy(Path source, Path dest) {
+    private void copy(Path source, Path dest) throws IOException {
         LOG.debug("copying {} to {}",source.toAbsolutePath(),dest.toAbsolutePath());
-        try{
-            if(new File(dest.toString()).isDirectory())
-                FileUtils.deleteDirectory(new File(dest.toString()));
-            Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
-        } catch(Exception e){
-            e.printStackTrace();
-        }
-
+        if(new File(dest.toString()).isDirectory())
+            FileUtils.deleteDirectory(new File(dest.toString()));
+        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
         LOG.debug("Copy DOne!");
     }
 
@@ -144,6 +146,7 @@ public class RequestProcessor {
         var isNestedContextPath = contextPath.contains(File.separator);
         LOG.debug("nested context path detection status {}",isNestedContextPath);
 
+        // new status for identification of deployment in root directory
         if(dirName.equalsIgnoreCase(parentDirectory)){
             LOG.debug("deploying spa in root directory");
             return -1;
