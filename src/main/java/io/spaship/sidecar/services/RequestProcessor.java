@@ -31,19 +31,7 @@ public class RequestProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(RequestProcessor.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
-
-    static boolean delRecursive(File fileOrDir) {
-        var deleteStat = false;
-        try{
-            deleteStat = fileOrDir.isDirectory() ? Arrays.stream(Objects.requireNonNull(fileOrDir.listFiles()))
-                    .allMatch(RequestProcessor::delRecursive) && fileOrDir.delete() : fileOrDir.delete();
-        }catch(Exception e){
-            deleteStat = false;
-            e.printStackTrace();
-        }
-
-        return deleteStat;
-    }
+    private final String rootDirIdentifier = ConfigProvider.getConfig().getValue("sidecar.root.dir.identifier", String.class);
 
     public Uni<OperationResponse> handleFileUpload(FormData formData) {
         return Uni.createFrom()
@@ -91,8 +79,15 @@ public class RequestProcessor {
 
         // Collect deployment dir related information
         var contextPath = spaMapping.getContextPath();
+
+        //Validation of context path for avoiding errors
+        if(contextPath.contains(rootDirIdentifier) && !contextPath.equals(rootDirIdentifier))
+            return opsBuilderCommon.status(0).errorMessage("invalid context path detected").build();
+
         var parentDeploymentDirectory = ConfigProvider.getConfig().getValue("sidecar.spadir", String.class);
-        var absoluteSpaPath = parentDeploymentDirectory.concat(File.separator).concat(contextPath);
+        //Determine absolute path, if contextPath is set to root folder then set absolute path as parent dir
+        var absoluteSpaPath =  contextPath.equals(rootDirIdentifier)?
+                parentDeploymentDirectory : parentDeploymentDirectory.concat(File.separator).concat(contextPath);
         LOG.debug("computed absolute spa path is {}", absoluteSpaPath);
         int status = handleDir(absoluteSpaPath,parentDeploymentDirectory,contextPath);
         var sourcePath = Paths.get(unZippedPath);
@@ -100,14 +95,15 @@ public class RequestProcessor {
 
         // Copy files from temporary place to the target directory
         try (var pathStream = Files.walk(sourcePath)) {
-            pathStream.forEach(source -> copy(source, destinationPath.resolve(sourcePath.relativize(source))));
+            pathStream.forEach(source -> copyOps(parentDeploymentDirectory, status,
+                    sourcePath, destinationPath, source));
         } catch (Exception e) {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
 
         // Build response
         LOG.debug("status is {}", status);
-        if (status == 1) {
+        if (status == 1 || status == -1) {
             LOG.debug("It was an existing SPA");
             opsBuilderCommon.status(2);
         }
@@ -121,19 +117,37 @@ public class RequestProcessor {
         return opsResponse;
     }
 
-    private void copy(Path source, Path dest) {
-        try{
-            Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
-        }catch(IOException e){
-            e.printStackTrace();
-           System.exit(1);
-
+    private void copyOps(String parentDeploymentDirectory, int status, Path sourcePath, Path destinationPath,
+                         Path source) {
+        if(status == -1 && destinationPath.resolve(sourcePath.relativize(source)).toAbsolutePath().toString()
+                .equalsIgnoreCase(parentDeploymentDirectory)){
+            LOG.debug("copying into root dir and skipping the first iteration");
+            return;
         }
+        copy(source, destinationPath.resolve(sourcePath.relativize(source)));
+    }
+
+    private void copy(Path source, Path dest) {
+        LOG.debug("copying {} to {}",source.toAbsolutePath(),dest.toAbsolutePath());
+        try{
+            if(new File(dest.toString()).isDirectory())
+                FileUtils.deleteDirectory(new File(dest.toString()));
+            Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+
+        LOG.debug("Copy DOne!");
     }
 
     private int handleDir(String dirName,String parentDirectory,String contextPath) {
         var isNestedContextPath = contextPath.contains(File.separator);
         LOG.debug("nested context path detection status {}",isNestedContextPath);
+
+        if(dirName.equalsIgnoreCase(parentDirectory)){
+            LOG.debug("deploying spa in root directory");
+            return -1;
+        }
 
         if (isSpaDirExists(dirName)) {
             deleteDirectory(dirName);
