@@ -47,8 +47,8 @@ public class SpaUploadController {
         Objects.requireNonNull(fileName, "validation failed, file name not found");
         Objects.requireNonNull(fileSize, "validation failed, file size cannot be null");
         Objects.requireNonNull(path, "validation failed, unable to store the file");
-
-        LOG.debug("file received  name is {} , size {}, location {} \n",
+        LOG.info("\n");
+        LOG.debug("file received  name is {} , size {}, location {} ",
                 fileName, fileSize, path);
 
     }

@@ -133,7 +133,7 @@ public class RequestProcessor {
             opsBuilderCommon.status(1);
         }
         var opsResponse = opsBuilderCommon.build();
-        LOG.debug("ops response is {}", opsResponse);
+        LOG.info("ops response is {}", opsResponse);
 
         return opsResponse;
     }
@@ -198,11 +198,11 @@ public class RequestProcessor {
     }
 
     private void copy(Path source, Path dest) throws IOException {
-        LOG.debug("copying {} to {}",source.toAbsolutePath(),dest.toAbsolutePath());
+        //LOG.debug("copying {} to {}",source.toAbsolutePath(),dest.toAbsolutePath());
         if(new File(dest.toString()).isDirectory())
             FileUtils.deleteDirectory(new File(dest.toString()));
         Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
-        LOG.debug("Copy DOne!");
+        //LOG.debug("Copy DOne!");
     }
 
     private int handleDir(String dirName,String parentDirectory,String contextPath) {
