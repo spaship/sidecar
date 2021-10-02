@@ -10,7 +10,6 @@ import io.spaship.sidecar.type.SpashipMapping;
 import io.spaship.sidecar.util.CheckedException;
 import io.spaship.sidecar.util.CommonOps;
 import io.spaship.sidecar.util.CustomException;
-import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
