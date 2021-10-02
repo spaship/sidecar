@@ -1,8 +1,18 @@
-# spaship-sidecar Project
+# spaship-sidecar
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This is a sidecar application which supports spa deployment in httpd server, for more details follow the [SPAship architecture document](https://spaship.io#sidecar) 
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+
+## Configurable Properties
+| Name | Description | Default value
+| --- | ----------- | ----------- |
+| sidecar.spadir | Parent directory where it will unpack the spas based on mapping, this must be linked with Apache2 or HTTPD  DocumentRoot directory| /app/data|
+| sidecar.websitename | For kubernetes deployment every sidecar container must be associated with an website | website|
+| sidecar.environmentname | Environment identifier of the sidecar container | dev|
+| sidecar.website.version | Side car version, this is an optional property |v1 |
+| spaship.mapping.file | The name of the mapping file that contains spaship mapping | .spaship|
+| sidecar.root.dir.identifier | Root directory identifier in the mapping file. | .|
+
 
 ## Running the application in dev mode
 
@@ -12,7 +22,6 @@ You can run your application in dev mode that enables live coding using:
 ./mvnw compile quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
 
 ## Packaging and running the application
 
@@ -49,5 +58,3 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 
 You can then execute your native executable with: `./target/spaship-sidecar-1.0.0-SNAPSHOT-runner`
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html
-.
