@@ -1,6 +1,10 @@
 # spaship-sidecar
 
-This is a sidecar application which supports spa deployment in httpd server, for more details follow the [SPAship architecture document](https://spaship.io#sidecar) 
+This is a sidecar application which supports spa deployment in httpd server.
+
+## Documentation
+
+For more details on operator follow the [SPAship architecture document](https://spaship.io#sidecar)
 
 
 ## Configurable Properties
