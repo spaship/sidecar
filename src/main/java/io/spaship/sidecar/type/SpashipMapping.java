@@ -2,8 +2,10 @@ package io.spaship.sidecar.type;
 
 import io.vertx.core.json.JsonObject;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This is a specialised class for retrieving the .spaship mapping
@@ -76,7 +78,8 @@ public class SpashipMapping extends JsonObject {
     }
 
     public void setExcludeFromEnvs() {
-        this.excludeFromEnvs = this.getJsonArray("excludeFromEnvs").getList();
+        var array = this.getJsonArray("handled ");
+        this.excludeFromEnvs = Objects.isNull(array)? Collections.emptyList():array.getList();
     }
 
     public String getBranch() {
