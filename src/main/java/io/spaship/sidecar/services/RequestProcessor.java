@@ -102,7 +102,9 @@ public class RequestProcessor {
         try {
             contextPath = extractSpaContextPath(unZippedPath);
         } catch (Exception e) {
-            return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
+            LOG.error("error {}",e.getMessage());
+            return opsBuilderCommon.status(0).errorMessage(e.getMessage()
+                    .concat(" during context path extraction process")).build();
         }
 
 
