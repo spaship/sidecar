@@ -94,7 +94,10 @@ public class RequestProcessor {
             unZippedPath = CommonOps.unzip(zipFilePath, null);
         } catch (IOException e) {
             LOG.error("error in method CommonOps.unzip ",e);
-            return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
+            var errMsg = e.getMessage();
+            if(Objects.isNull(errMsg) || errMsg.contains("null") ||  errMsg.isEmpty())
+                errMsg = "something went wrong, null pointer exception, check log for more details";
+            return opsBuilderCommon.status(0).errorMessage(errMsg).build();
         }
 
         //extract context path
@@ -102,9 +105,12 @@ public class RequestProcessor {
         try {
             contextPath = extractSpaContextPath(unZippedPath);
         } catch (Exception e) {
+
             LOG.error("error {}",e.getMessage());
-            return opsBuilderCommon.status(0).errorMessage(e.getMessage()
-                    .concat(" during context path extraction process")).build();
+            var errMsg = e.getMessage();
+            if(Objects.isNull(errMsg) || errMsg.contains("null") ||  errMsg.isEmpty())
+                errMsg = "something went wrong, may be a null pointer exception, check log for more details";
+            return opsBuilderCommon.status(0).errorMessage(errMsg).build();
         }
 
 
