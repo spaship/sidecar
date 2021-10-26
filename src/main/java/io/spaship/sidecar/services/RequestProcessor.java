@@ -150,7 +150,7 @@ public class RequestProcessor {
             });
         } catch (Exception e) {
             LOG.error("error in copySpa ",e);
-            throw new CustomException(e.getMessage());
+            throw new CustomException(e.getMessage().concat(" in sidecar"));
         }
     }
 
@@ -171,7 +171,7 @@ public class RequestProcessor {
             spaMapping = new SpashipMapping(spashipMappingString);
         } catch (Exception e) {
             LOG.error("error in method extractSpaContextPath ",e);
-            throw new CustomException(e.getMessage());
+            throw new CustomException(e.getMessage().concat(" in sidecar"));
         }
 
         // Collect deployment dir related information
