@@ -186,6 +186,9 @@ public class RequestProcessor {
         var contextPath = spaMapping.getContextPath();
         LOG.debug("extracted context path is {}",contextPath);
 
+        if(Objects.isNull(contextPath) || contextPath.isEmpty() || contextPath.isBlank())
+            throw new CustomException("invalid context path detected");
+
         //Validation of context path for avoiding errors
         if(contextPath.contains(rootDirIdentifier) && !contextPath.equals(rootDirIdentifier))
             throw new CustomException("invalid context path detected");
