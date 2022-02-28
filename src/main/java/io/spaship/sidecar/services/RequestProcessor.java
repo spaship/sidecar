@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -118,7 +120,7 @@ public class RequestProcessor {
         String absoluteSpaPath = computeAbsoluteDeploymentPath(contextPath);
 
         //Prepare target directory
-        int status = handleDir(absoluteSpaPath,parentDeploymentDirectory,contextPath);
+        int status = prepareDeploymentDirectory(absoluteSpaPath,parentDeploymentDirectory,contextPath);
 
         var sourcePath = Paths.get(unZippedPath);
         var destinationPath = Paths.get(absoluteSpaPath);
@@ -126,6 +128,7 @@ public class RequestProcessor {
         // Copy files from temporary place to the target directory
         try {
             copySpa(status, sourcePath, destinationPath);
+            enforceHtAccessRule(destinationPath);
         } catch (CustomException e) {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
@@ -160,7 +163,37 @@ public class RequestProcessor {
             LOG.error("error in copySpa ",e);
             throw new CustomException(e.getMessage().concat(" in sidecar"));
         }
+
     }
+
+    //ToDO
+    private void enforceHtAccessRule(Path destination) throws CustomException{
+
+        String htaccessContent = "<IfModule mod_rewrite.c>\n" +
+                "    RewriteEngine On\n" +
+                "    RewriteCond %{REQUEST_FILENAME} !-f\n" +
+                "    RewriteCond %{REQUEST_FILENAME} !-d\n" +
+                "    RewriteRule (.*) index.html\n" +
+                "    Header set X-Spaship-Single \"true\"\n" +
+                "</IfModule>";
+
+        var absHtAccessFilePath = destination.toAbsolutePath().toString()+File.separatorChar+".htaccess";
+        File htaccessFile = new File(absHtAccessFilePath);
+        LOG.info("the htaccess file path is {}",absHtAccessFilePath);
+        try {
+            if(!htaccessFile.createNewFile())
+                return;
+            FileWriter fstream = new FileWriter(absHtAccessFilePath);
+            try (BufferedWriter out = new BufferedWriter(fstream)) {
+                out.write(htaccessContent);
+            }
+        } catch (IOException e) {
+            throw new CustomException(e.getMessage().concat(",during htaccess ops"));
+        }
+
+    }
+
+
 
     private String computeAbsoluteDeploymentPath(String contextPath) {
         var absoluteSpaPath =  contextPath.equals(rootDirIdentifier)?
@@ -216,7 +249,7 @@ public class RequestProcessor {
         //LOG.debug("Copy DOne!");
     }
 
-    private int handleDir(String dirName,String parentDirectory,String contextPath) {
+    private int prepareDeploymentDirectory(String dirName,String parentDirectory,String contextPath) {
         var isNestedContextPath = contextPath.contains(File.separator);
         LOG.debug("nested context path detection status {}",isNestedContextPath);
 
