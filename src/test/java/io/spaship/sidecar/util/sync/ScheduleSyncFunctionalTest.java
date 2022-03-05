@@ -1,6 +1,8 @@
+/*
 package io.spaship.sidecar.util.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.junit.QuarkusTest;
 import io.spaship.sidecar.sync.ConfigJsonWrapper;
 import io.spaship.sidecar.sync.SyncService;
 import io.spaship.sidecar.sync.TargetEntry;
@@ -20,17 +22,19 @@ import java.util.Objects;
 import java.util.Scanner;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ScheduleSyncFunctionalTest {
+@QuarkusTest
+class ScheduleSyncFunctionalTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleSyncFunctionalTest.class);
 
     SyncService syncService;
     String syncConfig=null;
     ConfigJsonWrapper config =null;
+    static final String targetUrl = "https://raw.githubusercontent.com/arkaprovob/remote-config-for-testing/main/spaship-sync-config.json";
 
 
 
-    private String readFromRemote(String targetUrl) throws OperationException {
+    private String readFromRemote() throws OperationException {
         String content = null;
         URLConnection connection = null;
         try {
@@ -56,14 +60,12 @@ public class ScheduleSyncFunctionalTest {
     void setup() {
         syncService = new SyncService();
 
-        syncConfig = readFromRemote(
-                "https://raw.githubusercontent.com/spaship/spaship/master/packages/sync/config.json.example"
-        );
+        syncConfig = readFromRemote();
         //System.out.println(syncConfig);
 
         ObjectMapper mapper = new ObjectMapper();
         config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
-        System.out.println(config);
+        LOG.debug(config.toString());
 
 
     }
@@ -76,8 +78,9 @@ public class ScheduleSyncFunctionalTest {
 
     @Test
     void test_sync_functionality(){
-        TargetEntry te = config.getTargetEntries().get(0);
-        syncService.scheduleSync(te);
+        var tes = config.getTargetEntries();
+
+        tes.forEach(arg-> syncService.scheduleSync(arg));
     }
 
 
@@ -85,3 +88,4 @@ public class ScheduleSyncFunctionalTest {
 
 
 }
+*/

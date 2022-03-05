@@ -47,7 +47,7 @@ public class SyncService {
 
             var urlPartLength = targetUrlParts.length;
             if(urlPartLength >2)
-                LOG.info("target url part length must not exceed 2, " +
+                LOG.debug("target url part length must not exceed 2, " +
                         "something went wrong, targetEntry.getSourceUrl() is {}",targetEntry.getSourceUrl());
 
             if (urlPartLength >1){
@@ -60,7 +60,7 @@ public class SyncService {
 
 
 
-            LOG.info("targetUrl is {} and targetUrl length is {}",targetUrl,urlPartLength);
+            LOG.debug("targetUrl is {} and targetUrl length is {}",targetUrl,urlPartLength);
 
             var fullyQualifiedDestPath = targetEntry.getDestPath()
                     .concat(subPath);
@@ -118,7 +118,7 @@ public class SyncService {
             byte[] strToBytes = htmlContent.getBytes();
             Files.write(path, strToBytes);
 
-            LOG.info("{} successfully created",absHtmlFilePath);
+            LOG.debug("{} successfully created",absHtmlFilePath);
 
         } catch (IOException e) {
             throw new OperationException(
