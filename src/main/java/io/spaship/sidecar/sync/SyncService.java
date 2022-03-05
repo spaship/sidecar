@@ -49,8 +49,16 @@ public class SyncService {
             if(urlPartLength >2)
                 LOG.info("target url part length must not exceed 2, " +
                         "something went wrong, targetEntry.getSourceUrl() is {}",targetEntry.getSourceUrl());
-            if (urlPartLength >1)
-                targetUrl = targetUrlParts[0].concat(subPath).concat("?").concat(targetUrlParts[1]);
+
+            if (urlPartLength >1){
+                if(isForwardSlashMissing.test(subPath,targetUrlParts[0])){
+                    targetUrl = targetUrlParts[0].concat("/").concat(subPath).concat("?").concat(targetUrlParts[1]);
+                }else{
+                    targetUrl = targetUrlParts[0].concat(subPath).concat("?").concat(targetUrlParts[1]);
+                }
+            }
+
+
 
             LOG.info("targetUrl is {} and targetUrl length is {}",targetUrl,urlPartLength);
 
