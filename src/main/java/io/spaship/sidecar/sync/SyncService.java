@@ -12,27 +12,25 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.BiPredicate;
 
 public class SyncService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncService.class);
 
 
-    private void start(){
-
-        List<TargetEntry> targetEntries = Collections.emptyList();
-
-        targetEntries.forEach(targetEntry ->{
-            scheduleSync(targetEntry);
-        });
-
-
+    private void schedule(List<TargetEntry> targetEntries){
+        targetEntries.forEach(this::scheduleSync);
     }
 
-    private void scheduleSync(TargetEntry targetEntry) {
+    public BiPredicate<String,String> isForwardSlashMissing = (subPath, sourceUrl) -> !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
+
+
+
+
+    public void scheduleSync(TargetEntry targetEntry) {
 
         //TODO.. spin one new vertx periodic schedule and then invoke internal logic
 
@@ -40,6 +38,13 @@ public class SyncService {
         targetEntry.getSourceSubPaths().forEach(subPath ->{
             var targetUrlParts = targetEntry.getSourceUrl().split("\\\\?(?!\\\\?)",2);
             var targetUrl = targetEntry.getSourceUrl().concat(subPath);
+
+
+            if(isForwardSlashMissing.test(subPath,targetEntry.getSourceUrl()))
+                targetUrl = targetEntry.getSourceUrl().concat("/").concat(subPath);
+
+
+
             var urlPartLength = targetUrlParts.length;
             if(urlPartLength >2)
                 LOG.info("target url part length must not exceed 2, " +
@@ -47,7 +52,7 @@ public class SyncService {
             if (urlPartLength >1)
                 targetUrl = targetUrlParts[0].concat(subPath).concat("?").concat(targetUrlParts[1]);
 
-
+            LOG.info("targetUrl is {} and targetUrl length is {}",targetUrl,urlPartLength);
 
             var fullyQualifiedDestPath = targetEntry.getDestPath()
                     .concat(subPath);
