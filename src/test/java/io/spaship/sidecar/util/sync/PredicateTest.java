@@ -6,11 +6,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.function.BiPredicate;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PredicateTest {
 
 
     SyncService syncService;
+    BiPredicate<String,String> isForwardSlashMissing = (subPath, sourceUrl) -> !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
 
     @BeforeAll
     void setup() {
@@ -25,7 +28,7 @@ class PredicateTest {
         String subPath = "/k";
 
         var expectedOutcome = false;
-        var outcome = syncService.isForwardSlashMissing.test(subPath, url);
+        var outcome = isForwardSlashMissing.test(subPath, url);
 
         System.out.println(outcome);
 
@@ -40,7 +43,7 @@ class PredicateTest {
         String subPath = "k";
 
         var expectedOutcome = false;
-        var outcome = syncService.isForwardSlashMissing.test(subPath, url);
+        var outcome = isForwardSlashMissing.test(subPath, url);
 
         System.out.println(outcome);
 
@@ -56,7 +59,7 @@ class PredicateTest {
         String subPath = "k";
 
         var expectedOutcome = true;
-        var outcome = syncService.isForwardSlashMissing.test(subPath, url);
+        var outcome = isForwardSlashMissing.test(subPath, url);
 
         System.out.println(outcome);
 

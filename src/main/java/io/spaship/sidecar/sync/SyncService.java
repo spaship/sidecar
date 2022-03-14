@@ -1,6 +1,6 @@
 package io.spaship.sidecar.sync;
 
-import io.spaship.sidecar.services.RequestProcessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.spaship.sidecar.type.OperationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,27 +12,81 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiPredicate;
 
 public class SyncService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncService.class);
+    BiPredicate<String,String> isForwardSlashMissing = (subPath, sourceUrl) ->
+            !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
+    private static final List<Timer> timers = new ArrayList<>();
+    AtomicBoolean errorFlag = new AtomicBoolean(false);
 
 
-    private void schedule(List<TargetEntry> targetEntries){
-        targetEntries.forEach(this::scheduleSync);
+    public boolean init(String url) throws IOException {
+
+
+        String syncConfig = readRemoteConfig(url);
+
+        ObjectMapper mapper = new ObjectMapper();
+        var config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
+        cancelAllTasks();
+        schedule(config.getTargetEntries());
+
+        boolean hasError = errorFlag.get();
+        errorFlag.set(false);
+        return !hasError;
     }
 
-    public BiPredicate<String,String> isForwardSlashMissing = (subPath, sourceUrl) -> !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
+    private String readRemoteConfig(String url) throws IOException {
+        var connection = new URL(url).openConnection();
+        Scanner scanner = new Scanner(connection.getInputStream());
+        scanner.useDelimiter("\\Z");
+        var syncConfig = scanner.next();
+        scanner.close();
+        return syncConfig;
+    }
+
+    private void schedule(List<TargetEntry> targetEntries){
+        targetEntries.forEach(this::trigger);
+    }
+
+    private void trigger(TargetEntry te){
+
+        Timer timer = new Timer(te.getName());
+        TimerTask task = new TimerTask() {
+            public void run() {
+                updateResource(te);
+            }
+        };
+
+        int interval = Integer.parseInt(te.getInterval());
+
+        if( interval== 0){
+            timer.schedule(task,500L);
+            return;
+        }
+
+
+        timer.schedule(task,0,(interval* 1000L));
+        timers.add(timer);
+
+    }
+
+
+    public void cancelAllTasks(){
+        timers.forEach(Timer::cancel);
+    }
 
 
 
 
-    public void scheduleSync(TargetEntry targetEntry) {
 
-        //TODO.. spin one new vertx periodic schedule and then invoke internal logic
+
+    public void updateResource(TargetEntry targetEntry) {
+
 
         //inner logic of schedule
         targetEntry.getSourceSubPaths().forEach(subPath ->{
@@ -68,6 +122,7 @@ public class SyncService {
                 copyAndReplace(targetUrl,fullyQualifiedDestPath,targetEntry.getDestFileName());
             } catch (OperationException e) {
                 LOG.error(e.getMessage());
+                errorFlag.set(true);
             }
         });
     }
