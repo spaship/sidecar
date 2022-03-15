@@ -28,11 +28,13 @@ public class SyncService {
     public boolean init(String url) throws IOException {
 
 
-        String syncConfig = readRemoteConfig(url);
+
+        String syncConfig = readRemoteSyncConfig(url);
 
         ObjectMapper mapper = new ObjectMapper();
         var config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
         cancelAllTasks();
+        timers.clear();
         schedule(config.getTargetEntries());
 
         boolean hasError = errorFlag.get();
@@ -40,7 +42,7 @@ public class SyncService {
         return !hasError;
     }
 
-    private String readRemoteConfig(String url) throws IOException {
+    private String readRemoteSyncConfig(String url) throws IOException {
         var connection = new URL(url).openConnection();
         Scanner scanner = new Scanner(connection.getInputStream());
         scanner.useDelimiter("\\Z");
@@ -59,10 +61,11 @@ public class SyncService {
         TimerTask task = new TimerTask() {
             public void run() {
                 updateResource(te);
+                LOG.debug("fetching target  {} and interval is set to {} ",te.getName(),te.getInterval());
             }
         };
 
-        int interval = Integer.parseInt(te.getInterval());
+        int interval = te.getIntInterval();
 
         if( interval== 0){
             timer.schedule(task,500L);
@@ -72,12 +75,18 @@ public class SyncService {
 
         timer.schedule(task,0,(interval* 1000L));
         timers.add(timer);
+        LOG.debug("added imer in the list the list length is {}",timers.size());
 
     }
 
 
     public void cancelAllTasks(){
-        timers.forEach(Timer::cancel);
+        LOG.info("the length of timer is {}", timers.size());
+        timers.forEach(timer -> {
+            timer.cancel();
+            timer.purge();
+            LOG.info("removed timer {}",timer);
+        });
     }
 
 
