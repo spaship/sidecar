@@ -25,22 +25,28 @@ public class SyncService {
     AtomicBoolean errorFlag = new AtomicBoolean(false);
 
 
+    public int getTasksLength(){
+        return timers.size();
+    }
+
+
     public boolean init(String url) throws IOException {
-
-
-
         String syncConfig = readRemoteSyncConfig(url);
-
         ObjectMapper mapper = new ObjectMapper();
         var config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
+        return init(config);
+    }
+
+    public boolean init(ConfigJsonWrapper config) {
+        Objects.requireNonNull(config,"configObject not fond!");
         cancelAllTasks();
-        timers.clear();
         schedule(config.getTargetEntries());
 
         boolean hasError = errorFlag.get();
         errorFlag.set(false);
         return !hasError;
     }
+
 
     private String readRemoteSyncConfig(String url) throws IOException {
         var connection = new URL(url).openConnection();
@@ -87,6 +93,7 @@ public class SyncService {
             timer.purge();
             LOG.info("removed timer {}",timer);
         });
+        timers.clear();
     }
 
 
@@ -110,7 +117,7 @@ public class SyncService {
 
             var urlPartLength = targetUrlParts.length;
             if(urlPartLength >2)
-                LOG.debug("target url part length must not exceed 2, " +
+                LOG.warn("target url part length must not exceed 2, " +
                         "something went wrong, targetEntry.getSourceUrl() is {}",targetEntry.getSourceUrl());
 
             if (urlPartLength >1){
@@ -136,6 +143,8 @@ public class SyncService {
         });
     }
 
+
+    //TODO break into smaller functions
     private void copyAndReplace(String targetUrl, String fullyQualifiedDestPath, String fileName) throws OperationException {
 
         // curl the html content from remote
