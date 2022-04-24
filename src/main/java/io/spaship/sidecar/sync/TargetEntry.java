@@ -3,6 +3,9 @@ package io.spaship.sidecar.sync;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -10,6 +13,8 @@ import java.util.List;
 @Getter
 @Setter
 public class TargetEntry {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TargetEntry.class);
 
     @JsonProperty("name")
     private String name;
@@ -40,7 +45,10 @@ public class TargetEntry {
     }
 
     public String getDestPath(){
-        return this.dest.getPath();
+        var transformedDestPath = dest.getPath().replace("/var/www",
+                ConfigProvider.getConfig().getValue("sidecar.spadir", String.class));
+        LOG.debug("transformed destination path is {}",transformedDestPath);
+        return transformedDestPath;
     }
 
     public String getDestFileName(){

@@ -59,6 +59,7 @@ public class SyncService {
 
     private void schedule(List<TargetEntry> targetEntries){
         targetEntries.forEach(this::trigger);
+        LOG.info("all target entries are scheduled to know more check resource /sync");
     }
 
     private void trigger(TargetEntry te){
@@ -159,10 +160,8 @@ public class SyncService {
         // create target directories if not exists
         if(!file.isDirectory()){
             try {
-                LOG.info("LIVE DEBUG, fullyQualifiedDestPath is {}",Paths.get(fullyQualifiedDestPath).toString());
                 Files.createDirectories(Paths.get(fullyQualifiedDestPath));
             } catch (IOException e) {
-                e.printStackTrace();
                 throw new OperationException(
                         String.format("failed to create directories recursively due to %s",e.getMessage())
                         ,e);
