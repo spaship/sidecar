@@ -45,7 +45,7 @@ public class TargetEntry {
     }
 
     public String getDestPath(){
-        var transformedDestPath = dest.getPath().replace("/var/www",
+        var transformedDestPath = dest.getPath().replace("/var/www/html",
                 ConfigProvider.getConfig().getValue("sidecar.spadir", String.class));
         LOG.debug("transformed destination path is {}",transformedDestPath);
         return transformedDestPath;
