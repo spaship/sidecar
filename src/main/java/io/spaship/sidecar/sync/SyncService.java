@@ -161,6 +161,7 @@ public class SyncService {
             try {
                 Files.createDirectories(Paths.get(fullyQualifiedDestPath));
             } catch (IOException e) {
+                e.printStackTrace();
                 throw new OperationException(
                         String.format("failed to create directories recursively due to %s",e.getMessage())
                         ,e);
