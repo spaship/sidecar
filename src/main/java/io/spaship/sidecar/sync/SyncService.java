@@ -159,6 +159,7 @@ public class SyncService {
         // create target directories if not exists
         if(!file.isDirectory()){
             try {
+                LOG.info("LIVE DEBUG, fullyQualifiedDestPath is {}",Paths.get(fullyQualifiedDestPath).toString());
                 Files.createDirectories(Paths.get(fullyQualifiedDestPath));
             } catch (IOException e) {
                 e.printStackTrace();
