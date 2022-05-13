@@ -106,6 +106,7 @@ public class RequestProcessor {
         String contextPath = null;
         try {
             contextPath = extractSpaContextPath(unZippedPath);
+            environment.setSpaContextPath(contextPath);
         } catch (Exception e) {
 
             LOG.error("error {}",e.getMessage());
