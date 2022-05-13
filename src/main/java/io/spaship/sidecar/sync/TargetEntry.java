@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -37,7 +38,13 @@ public class TargetEntry {
     }
 
     public List<String> getSourceSubPaths(){
+        if(Objects.isNull(source.getSubPaths()))
+            return List.of();
         return Arrays.asList(source.getSubPaths());
+    }
+
+    public void setSourceSubPaths(String[] subPaths){
+        source.setSubPaths(subPaths);
     }
 
     public String getSourceUrl(){

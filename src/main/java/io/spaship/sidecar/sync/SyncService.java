@@ -105,6 +105,9 @@ public class SyncService {
     public void updateResource(TargetEntry targetEntry) {
 
 
+        if (targetEntry.getSourceSubPaths().isEmpty())
+            targetEntry.setSourceSubPaths(new String[]{"/"});
+
         //inner logic of schedule
         targetEntry.getSourceSubPaths().forEach(subPath ->{
             var targetUrlParts = targetEntry.getSourceUrl().split("\\\\?(?!\\\\?)",2);
