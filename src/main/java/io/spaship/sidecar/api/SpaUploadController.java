@@ -26,7 +26,7 @@ public class SpaUploadController {
     @Produces("text/plain")
     @GET
     public String upload() {
-        return "please post a spa zip in the same url to make it work";
+        return "from sidecar container v1.0.0, please post a spa zip in the same url to make it work";
     }
 
 
