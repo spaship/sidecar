@@ -130,14 +130,22 @@ public class RequestProcessor {
 
         // set response status based on target dir preparation status
         LOG.debug("status is {}", status);
-        if (status == 1 || status == -1) {
-            LOG.debug("It was an existing SPA");
-            opsBuilderCommon.status(2);
+
+        switch (status){
+            case 1:
+            case -1:
+                LOG.debug("It was an existing SPA");
+                opsBuilderCommon.status(2);
+                break;
+            case 0:
+                LOG.debug("It's a new SPA!");
+                opsBuilderCommon.status(1);
+                break;
+            default:
+                LOG.info("unknown status");
+                break;
         }
-        if (status == 0) {
-            LOG.debug("It's a new SPA!");
-            opsBuilderCommon.status(1);
-        }
+
         var opsResponse = opsBuilderCommon.build();
         LOG.info("ops response is {}", opsResponse);
 
