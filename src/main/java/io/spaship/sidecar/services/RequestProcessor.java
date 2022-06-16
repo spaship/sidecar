@@ -199,7 +199,7 @@ public class RequestProcessor {
 
     }
 
-    //ToDO
+    //ToDO, this is required for fixing the virtual address redirection issue, find a better way to create .htaccess file
     private void enforceHtAccessRule(Path destination) throws CustomException {
 
         String htaccessContent = "<IfModule mod_rewrite.c>\n" +
