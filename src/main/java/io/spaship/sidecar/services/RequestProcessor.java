@@ -22,9 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -70,8 +68,8 @@ public class RequestProcessor {
         Objects.requireNonNull(website, "website is missing in the configuration");
         Objects.requireNonNull(environmentName, "website is missing in the configuration");
         Objects.requireNonNull(websiteVersion, "websiteVersion is missing in the configuration");
-        Objects.requireNonNull(spashipMappingFleName,"spaship mapping file identifier missing");
-        Objects.requireNonNull(parentDeploymentDirectory,"deployment directory info missing");
+        Objects.requireNonNull(spashipMappingFleName, "spaship mapping file identifier missing");
+        Objects.requireNonNull(parentDeploymentDirectory, "deployment directory info missing");
         LOG.debug("field validation end");
     }
 
@@ -80,7 +78,6 @@ public class RequestProcessor {
                 .item(() -> processFile(formData))
                 .runSubscriptionOn(executor);
     }
-
 
 
     // todo break into smaller methods, get rid of imperative code
@@ -94,52 +91,33 @@ public class RequestProcessor {
         // Unzip the incoming dist file and return the location of the unzipped file
         var zipFilePath = formData.getfilePath().toString();
         String unZippedPath = unzipDist(zipFilePath);
-        if(unZippedPath == null)
+        if (unZippedPath == null)
             return opsBuilderCommon.status(0)
                     .errorMessage("something went wrong, null pointer exception, check console for stacktrace").build();
 
         //extract context path and spaship meta file
-        String contextPath = null;
-        boolean isDeleteOperation;
-        try {
-            var spashipMeta = extractSpashipMeta(unZippedPath);
-            if(Objects.isNull(spashipMeta))
-                return opsBuilderCommon.status(0)
-                        .errorMessage("failed to process spaship mapping, check stack trace in sidecar").build();
-            isDeleteOperation = isDeleteOperation(spashipMeta.second);
-            contextPath = spashipMeta.first;
-            environment.setSpaContextPath(contextPath);
-        } catch (Exception e) {
-
-            LOG.error("error {}",e.getMessage());
-            var errMsg = e.getMessage();
-            if(Objects.isNull(errMsg) || errMsg.contains("null") ||  errMsg.isEmpty())
-                errMsg = "something went wrong, may be a null pointer exception, check log for more details";
-            return opsBuilderCommon.status(0).errorMessage(errMsg).build();
-        }
-
+        var spashipMeta = extractSpashipMeta(unZippedPath);
+        if (Objects.isNull(spashipMeta))
+            return opsBuilderCommon.status(0)
+                    .errorMessage("failed to process spaship mapping, for more details check stacktrace of sidecar").build();
+        environment.setSpaContextPath(spashipMeta.first);
 
         //Determine absolute path, if contextPath is set to root folder then set absolute path as parent dir
-        String absoluteSpaPath = computeAbsoluteDeploymentPath(contextPath);
+        String absoluteSpaPath = computeAbsoluteDeploymentPath(spashipMeta.first);
         var destinationPath = Paths.get(absoluteSpaPath);
 
         // delete the spa directory if exclude attribute is set to true for this env in spaship mapping file
-        if(isDeleteOperation){
-            try {
-                if(contextPath.equals(rootDirIdentifier))
-                    deleteContentOfRootDir(destinationPath);
-                else
-                    deleteDirectory(destinationPath.toString());
-
+        if (isDeleteOperation(spashipMeta.second)) {
+            if (deleteSPA(spashipMeta.first, destinationPath))
                 return opsBuilderCommon.status(3).build();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            else
+                return opsBuilderCommon.status(0)
+                        .errorMessage("failed to delete spa directory, for more details check stacktrace of sidecar")
+                        .build();
         }
 
         //Prepare target directory
-        int status = prepareDeploymentDirectory(absoluteSpaPath,parentDeploymentDirectory,contextPath);
+        int status = prepareDeploymentDirectory(absoluteSpaPath, parentDeploymentDirectory, spashipMeta.first);
 
         var sourcePath = Paths.get(unZippedPath);
         // Copy files from temporary place to the target directory
@@ -166,11 +144,26 @@ public class RequestProcessor {
         return opsResponse;
     }
 
-    private String unzipDist(String zipFileLocation){
+    private boolean deleteSPA(String contextPath, Path destinationPath) {
+        try {
+            if (contextPath.equals(rootDirIdentifier))
+                deleteContentOfRootDir(destinationPath);
+            else
+                deleteDirectory(destinationPath.toString());
+
+            return true;
+
+        } catch (IOException e) {
+            LOG.error("failed to execute deleteSPA(String contextPath, Path destinationPath) ", e);
+        }
+        return false;
+    }
+
+    private String unzipDist(String zipFileLocation) {
         try {
             return CommonOps.unzip(zipFileLocation, null);
         } catch (IOException e) {
-            LOG.error("error in unzipDist(String zipFileLocation) ",e);
+            LOG.error("error in unzipDist(String zipFileLocation) ", e);
             return null;
         }
     }
@@ -192,14 +185,14 @@ public class RequestProcessor {
                 }
             });
         } catch (Exception e) {
-            LOG.error("error in copySpa ",e);
+            LOG.error("error in copySpa ", e);
             throw new CustomException(e.getMessage().concat(" in sidecar"));
         }
 
     }
 
     //ToDO
-    private void enforceHtAccessRule(Path destination) throws CustomException{
+    private void enforceHtAccessRule(Path destination) throws CustomException {
 
         String htaccessContent = "<IfModule mod_rewrite.c>\n" +
                 "    RewriteEngine On\n" +
@@ -209,11 +202,11 @@ public class RequestProcessor {
                 "    Header set X-Spaship-Single \"true\"\n" +
                 "</IfModule>";
 
-        var absHtAccessFilePath = destination.toAbsolutePath().toString()+File.separatorChar+".htaccess";
+        var absHtAccessFilePath = destination.toAbsolutePath().toString() + File.separatorChar + ".htaccess";
         File htaccessFile = new File(absHtAccessFilePath);
-        LOG.info("the htaccess file path is {}",absHtAccessFilePath);
+        LOG.info("the htaccess file path is {}", absHtAccessFilePath);
         try {
-            if(!htaccessFile.createNewFile())
+            if (!htaccessFile.createNewFile())
                 return;
             FileWriter fstream = new FileWriter(absHtAccessFilePath);
             try (BufferedWriter out = new BufferedWriter(fstream)) {
@@ -226,15 +219,14 @@ public class RequestProcessor {
     }
 
 
-
     private String computeAbsoluteDeploymentPath(String contextPath) {
-        var absoluteSpaPath =  contextPath.equals(rootDirIdentifier)?
+        var absoluteSpaPath = contextPath.equals(rootDirIdentifier) ?
                 parentDeploymentDirectory : parentDeploymentDirectory.concat(File.separator).concat(contextPath);
-        LOG.debug("computed absoluteSpaPath is {}",absoluteSpaPath);
+        LOG.debug("computed absoluteSpaPath is {}", absoluteSpaPath);
         return absoluteSpaPath;
     }
 
-    private Tuple<String,SpashipMapping> extractSpashipMeta(String unZippedPath){
+    private Tuple<String, SpashipMapping> extractSpashipMeta(String unZippedPath) {
         // Extract and load SpashipMapping
         var path = unZippedPath.concat(File.separator).concat(spashipMappingFleName);
         LOG.debug("fully qualified spaship mapping is {}", path);
@@ -243,34 +235,34 @@ public class RequestProcessor {
             var spashipMappingString = content.collect(Collectors.joining(System.lineSeparator()));
             spaMapping = new SpashipMapping(spashipMappingString);
         } catch (Exception e) {
-            LOG.error("error in method extractSpaContextPath ",e);
+            LOG.error("error in method extractSpaContextPath ", e);
             return null;
         }
 
         // Collect deployment dir related information
         var contextPath = spaMapping.getContextPath();
-        LOG.debug("extracted context path is {}",contextPath);
+        LOG.debug("extracted context path is {}", contextPath);
 
-        if(Objects.isNull(contextPath) || contextPath.isEmpty() || contextPath.isBlank()){
+        if (Objects.isNull(contextPath) || contextPath.isEmpty() || contextPath.isBlank()) {
             LOG.error("invalid context path detected");
             return null;
         }
 
         //Validation of context path for avoiding errors
-        if(contextPath.contains(rootDirIdentifier) && !contextPath.equals(rootDirIdentifier)){
+        if (contextPath.contains(rootDirIdentifier) && !contextPath.equals(rootDirIdentifier)) {
             LOG.error("invalid context path detected");
             return null;
         }
 
-        return new Tuple<>(contextPath,spaMapping);
+        return new Tuple<>(contextPath, spaMapping);
     }
 
 
     private void copyOps(String parentDeploymentDirectory, int status, Path sourcePath, Path destinationPath,
                          Path source) throws IOException {
         // To avoid DirectoryNotEmptyException
-        if(status == -1 && destinationPath.resolve(sourcePath.relativize(source)).toAbsolutePath().toString()
-                .equalsIgnoreCase(parentDeploymentDirectory)){
+        if (status == -1 && destinationPath.resolve(sourcePath.relativize(source)).toAbsolutePath().toString()
+                .equalsIgnoreCase(parentDeploymentDirectory)) {
             LOG.debug("copying into root dir and skipping the first iteration");
             return;
         }
@@ -279,18 +271,18 @@ public class RequestProcessor {
 
     private void copy(Path source, Path dest) throws IOException {
         //LOG.debug("copying {} to {}",source.toAbsolutePath(),dest.toAbsolutePath());
-        if(new File(dest.toString()).isDirectory())
+        if (new File(dest.toString()).isDirectory())
             FileUtils.deleteDirectory(new File(dest.toString()));
         Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
         //LOG.debug("Copy DOne!");
     }
 
-    private int prepareDeploymentDirectory(String dirName,String parentDirectory,String contextPath) {
+    private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
         var isNestedContextPath = contextPath.contains(File.separator);
-        LOG.debug("nested context path detection status {}",isNestedContextPath);
+        LOG.debug("nested context path detection status {}", isNestedContextPath);
 
         // new status for identification of deployment in root directory
-        if(dirName.equalsIgnoreCase(parentDirectory)){
+        if (dirName.equalsIgnoreCase(parentDirectory)) {
             LOG.debug("deploying spa in root directory");
             return -1;
         }
@@ -300,12 +292,12 @@ public class RequestProcessor {
             return 1;
         }
         LOG.debug("directory does not exists");
-        if(isNestedContextPath){
+        if (isNestedContextPath) {
             var recursiveDirectoryCreateStatus = new File(dirName).mkdirs();
-            LOG.debug("recursive dir create status is {}",recursiveDirectoryCreateStatus);
-        }else{
+            LOG.debug("recursive dir create status is {}", recursiveDirectoryCreateStatus);
+        } else {
             var directoryCreateStatus = new File(dirName).mkdir();
-            LOG.debug("dir create status is {}",directoryCreateStatus);
+            LOG.debug("dir create status is {}", directoryCreateStatus);
         }
         return 0;
     }
@@ -317,7 +309,7 @@ public class RequestProcessor {
         return exists;
     }
 
-    private void deleteDirectory(String dirName){
+    private void deleteDirectory(String dirName) {
         var dir = new File(dirName);
         var deleted = false;
         try {
@@ -328,14 +320,15 @@ public class RequestProcessor {
             deleted = true;
         } catch (IOException e) {
             e.printStackTrace();
-            LOG.error("Error file delete {} , on {}",e.getMessage(),e.getLocalizedMessage());
+            LOG.error("Error file delete {} , on {}", e.getMessage(), e.getLocalizedMessage());
         }
 
         LOG.debug("dir {} delete status is {}", dirName, deleted);
     }
+
     private void deleteContentOfRootDir(Path rootPath) throws IOException {
-        try(var f=Files.list(rootPath) ){
-            f.filter(p -> !p.toFile().isDirectory() && !p.toFile().isHidden() )
+        try (var f = Files.list(rootPath)) {
+            f.filter(p -> !p.toFile().isDirectory() && !p.toFile().isHidden())
                     .map(Path::toFile)
                     .sorted(Comparator.comparing(File::isFile))
                     .forEach(File::delete);
