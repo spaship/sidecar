@@ -210,6 +210,15 @@ public class SyncService {
         String content = null;
         URLConnection connection = null;
         try {
+
+            //TODO replace this condition with targetUrl.endsWith("/")
+            boolean isTrailingSlashPresent = targetUrl.substring(targetUrl.length() - 1).equals("/");
+            if(isTrailingSlashPresent){
+                targetUrl = targetUrl.substring(0,targetUrl.length() - 1);
+                LOG.info("trailing slash found in the url and removed final targetUrl is {}",targetUrl);
+            }
+
+
             connection = new URL(targetUrl).openConnection();
             Scanner scanner = new Scanner(connection.getInputStream());
             scanner.useDelimiter("\\Z");
