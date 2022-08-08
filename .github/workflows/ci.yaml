@@ -5,7 +5,7 @@ on:
     branches:
       - 'master'
       - 'dev'
-      - 'test'
+      - 'v1'
       - 'qa'
 #    tags:
 #      - '*'
