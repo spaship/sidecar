@@ -7,7 +7,7 @@ on:
       - 'dev'
       - 'test'
       - 'qa'
-      - 'fix/trailing-slash'
+      - 'fix/**'
 #    tags:
 #      - '*'
 #    paths:
