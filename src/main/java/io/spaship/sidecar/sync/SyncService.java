@@ -212,6 +212,9 @@ public class SyncService {
         try {
             targetUrl = replaceTrailingSlash(targetUrl);
             connection = new URL(targetUrl).openConnection();
+            // Disable caching
+            connection.setUseCaches(false);
+            connection.setDefaultUseCaches(false);
             Scanner scanner = new Scanner(connection.getInputStream());
             scanner.useDelimiter("\\Z");
             content = scanner.next();
