@@ -220,10 +220,10 @@ public class SyncService {
             content = scanner.next();
             scanner.close();
         } catch (IOException e) {
+            LOG.error("failed to read from {}",targetUrl);
             throw new OperationException(
                     String.format("unable to fetch html content from remote due to %s",e.getMessage())
                     ,e);
-
         }
 
         return content;
