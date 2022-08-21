@@ -112,14 +112,11 @@ public class SyncService {
 
         //inner logic of schedule
         targetEntry.getSourceSubPaths().forEach(subPath ->{
-            var targetUrlParts = targetEntry.getSourceUrl().split("\\\\?(?!\\\\?)",2);
+            var targetUrlParts = targetEntry.getSourceUrl().split("\\?");
             var targetUrl = targetEntry.getSourceUrl().concat(subPath);
-
 
             if(isForwardSlashMissing.test(subPath,targetEntry.getSourceUrl()))
                 targetUrl = targetEntry.getSourceUrl().concat("/").concat(subPath);
-
-
 
             var urlPartLength = targetUrlParts.length;
             if(urlPartLength >2)
@@ -193,14 +190,18 @@ public class SyncService {
                 return;
 
             var noCacheParam = ConfigProvider.getConfig()
-                    .getValue("curl.nocache.param", String.class);
+                    .getValue("curl.nocache.param", String.class).equalsIgnoreCase("na")?
+                    null:ConfigProvider.getConfig().getValue("curl.nocache.param", String.class);
             var proxyParam = ConfigProvider.getConfig()
-                    .getValue("curl.proxy.param", String.class);
+                    .getValue("curl.proxy.param", String.class).equalsIgnoreCase("na")?
+                    null:ConfigProvider.getConfig().getValue("curl.proxy.param", String.class);
             var debugCurl = ConfigProvider.getConfig()
                     .getValue("curl.command.debug", String.class).equalsIgnoreCase("true");
 
             //execute curl command
-
+            var statusCodeOutcome = CurlUtility.with(fullyQualifiedDestPath,debugCurl)
+                    .apply(transformedTargetUrl,fileName,noCacheParam,proxyParam);
+            LOG.debug("curl return code is {}",statusCodeOutcome);
 
         } catch (Exception e) {
             throw new OperationException(
