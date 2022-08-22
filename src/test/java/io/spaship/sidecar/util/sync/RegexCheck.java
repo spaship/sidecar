@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,8 +13,15 @@ class RegexCheck {
 
 
     private static final String REGEX = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+    private static final String QMARKREGEX = "\\?";
 
-
+    @Test
+    void urlSplitByRegex(){
+        String url = "https://example.com/services/chrome/head?legacy=false";
+        String[] urlPart = url.split(QMARKREGEX);
+        System.out.println(Arrays.toString(urlPart));
+        Assertions.assertTrue(urlPart.length>1);
+    }
 
     @Test
     void isUrlTrueCase1(){

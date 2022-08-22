@@ -2,11 +2,13 @@ package io.spaship.sidecar.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.spaship.sidecar.type.OperationException;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -110,14 +112,11 @@ public class SyncService {
 
         //inner logic of schedule
         targetEntry.getSourceSubPaths().forEach(subPath ->{
-            var targetUrlParts = targetEntry.getSourceUrl().split("\\\\?(?!\\\\?)",2);
+            var targetUrlParts = targetEntry.getSourceUrl().split("\\?");
             var targetUrl = targetEntry.getSourceUrl().concat(subPath);
-
 
             if(isForwardSlashMissing.test(subPath,targetEntry.getSourceUrl()))
                 targetUrl = targetEntry.getSourceUrl().concat("/").concat(subPath);
-
-
 
             var urlPartLength = targetUrlParts.length;
             if(urlPartLength >2)
@@ -151,8 +150,8 @@ public class SyncService {
     //TODO break into smaller functions
     private void copyAndReplace(String targetUrl, String fullyQualifiedDestPath, String fileName) throws OperationException {
 
-        // curl the html content from remote
-        String htmlContent = readFromRemote(targetUrl);
+        // format target url
+        String transformedTargetUrl = replaceTrailingSlash(targetUrl);
 
         // compute simple absolute html file path based on target directory and file name
         String absHtmlFilePath = fullyQualifiedDestPath.concat("/").concat(fileName);
@@ -190,14 +189,21 @@ public class SyncService {
             if(!isFileCreated)
                 return;
 
-            //write content into html file
-            Path path = Paths.get(absHtmlFilePath);
-            byte[] strToBytes = htmlContent.getBytes();
-            Files.write(path, strToBytes);
+            var noCacheParam = ConfigProvider.getConfig()
+                    .getValue("curl.nocache.param", String.class).equalsIgnoreCase("na")?
+                    null:ConfigProvider.getConfig().getValue("curl.nocache.param", String.class);
+            var proxyParam = ConfigProvider.getConfig()
+                    .getValue("curl.proxy.param", String.class).equalsIgnoreCase("na")?
+                    null:ConfigProvider.getConfig().getValue("curl.proxy.param", String.class);
+            var debugCurl = ConfigProvider.getConfig()
+                    .getValue("curl.command.debug", String.class).equalsIgnoreCase("true");
 
-            LOG.debug("{} successfully created",absHtmlFilePath);
+            //execute curl command
+            var statusCodeOutcome = CurlUtility.with(fullyQualifiedDestPath,debugCurl)
+                    .apply(transformedTargetUrl,fileName,noCacheParam,proxyParam);
+            LOG.debug("curl return code is {}",statusCodeOutcome);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new OperationException(
                     String.format("failed to create html file due to %s",e.getMessage())
                     ,e);
@@ -206,28 +212,7 @@ public class SyncService {
 
     }
 
-    private String readFromRemote(String targetUrl) throws OperationException {
-        String content = null;
-        URLConnection connection = null;
-        try {
-            targetUrl = replaceTrailingSlash(targetUrl);
-            connection = new URL(targetUrl).openConnection();
-            // Disable caching
-            connection.setUseCaches(false);
-            connection.setDefaultUseCaches(false);
-            Scanner scanner = new Scanner(connection.getInputStream());
-            scanner.useDelimiter("\\Z");
-            content = scanner.next();
-            scanner.close();
-        } catch (IOException e) {
-            LOG.error("failed to read from {}",targetUrl);
-            throw new OperationException(
-                    String.format("unable to fetch html content from remote due to %s",e.getMessage())
-                    ,e);
-        }
 
-        return content;
-    }
 
     private String replaceTrailingSlash(String targetUrl) {
         //TODO replace this condition with targetUrl.endsWith("/")
@@ -238,6 +223,5 @@ public class SyncService {
         }
         return targetUrl;
     }
-
 
 }
