@@ -31,10 +31,9 @@ public class CurlUtility {
             processBuilder.redirectErrorStream(true);
             processBuilder.directory(new File(executionDirectory));
             Process process = processBuilder.start();
-            var formattedCurlCommand =  curlCommand.replace("~"," ");
             process.onExit().thenRun(() -> LOG.info("curl command executed for url {}", commands[commands.length-3]));
             if (debug)
-                debugCommandOutput(process,formattedCurlCommand);
+                debugCommandOutput(process,curlCommand);
             process.waitFor();
             process.destroy();
             return process.exitValue();
@@ -45,7 +44,9 @@ public class CurlUtility {
     }
 
     static  void debugCommandOutput(Process process, String curlCommand) {
-        LOG.info("debugging curl command {} ",curlCommand);
+        var formattedCurlCommand =  curlCommand.replace("~"," ");
+        LOG.debug("unformatted curl command {} ",curlCommand);
+        LOG.info("formatted curl command {} ",formattedCurlCommand);
         final Thread ioThread = new Thread(() -> {
             try {
                 final BufferedReader reader = new BufferedReader(
