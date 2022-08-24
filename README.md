@@ -1,6 +1,12 @@
 # spaship-sidecar
 
-This is a sidecar application which supports spa deployment in httpd server.
+This is a very lightweight Java application which 
+* Reads configuration from .spaship file 
+* Creates or update SPAs in http server
+* Removes SPA directory fom http server
+* Schedule SSI Sync
+
+Every SPAship environment contains this sidecar container.
 
 ## Documentation
 
@@ -14,8 +20,11 @@ For more details on operator follow the [SPAship architecture document](https://
 | sidecar.websitename | For kubernetes deployment every sidecar container must be associated with an website | website|
 | sidecar.environmentname | Environment identifier of the sidecar container | dev|
 | sidecar.website.version | Side car version, this is an optional property |v1 |
+| sidecar.root.dir.identifier | this char in spaship mapping denotes the root directory |. |
 | spaship.mapping.file | The name of the mapping file that contains spaship mapping | .spaship|
-| sidecar.root.dir.identifier | Root directory identifier in the mapping file. | .|
+| curl.nocache.param | Cache-Control header  | -H~'Cache-Control: no-cache, no-store'|
+| curl.proxy.param | proxy arguement for cul command | --proxy~http://squid.corp.redhat.com:3128|
+| curl.command.debug | debugging the output of curl command | true|
 
 
 ## Running the application in dev mode
