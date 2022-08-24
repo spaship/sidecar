@@ -28,7 +28,7 @@ jobs:
     name: SPAship sidecar container
     env:
       IMAGE_NAME: "sidecar"
-      REGISTRY_NAMESPACE: "arbhatta"
+      REGISTRY_NAMESPACE: "spaship"
 
     steps:
 
