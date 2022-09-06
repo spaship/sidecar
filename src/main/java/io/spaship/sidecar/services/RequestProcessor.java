@@ -100,7 +100,7 @@ public class RequestProcessor {
         if (Objects.isNull(spashipMeta))
             return opsBuilderCommon.status(0)
                     .errorMessage("failed to process spaship mapping, for more details check stacktrace of sidecar").build();
-        environment.setSpaContextPath(spashipMeta.first);
+        environment.setSpaContextPath(spashipMeta.first.replace(File.separator,"_"));
 
         //Determine absolute path, if contextPath is set to root folder then set absolute path as parent dir
         String absoluteSpaPath = computeAbsoluteDeploymentPath(spashipMeta.first);
@@ -229,7 +229,8 @@ public class RequestProcessor {
 
     private String computeAbsoluteDeploymentPath(String contextPath) {
         var absoluteSpaPath = contextPath.equals(rootDirIdentifier) ?
-                parentDeploymentDirectory : parentDeploymentDirectory.concat(File.separator).concat(contextPath);
+                parentDeploymentDirectory : parentDeploymentDirectory.concat(File.separator)
+                .concat(contextPath.replace(File.separator,"_"));
         LOG.debug("computed absoluteSpaPath is {}", absoluteSpaPath);
         return absoluteSpaPath;
     }
