@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -123,7 +125,7 @@ public class RequestProcessor {
         // Copy files from temporary place to the target directory
         try {
             copySpa(status, sourcePath, destinationPath);
-            enforceHtAccessRule(destinationPath);
+            enforceHtAccessRule(destinationPath,spashipMeta.second);
         } catch (CustomException e) {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
@@ -200,14 +202,18 @@ public class RequestProcessor {
     }
 
     //ToDO, this is required for fixing the virtual address redirection issue, find a better way to create .htaccess file
-    private void enforceHtAccessRule(Path destination) throws CustomException {
+    private void enforceHtAccessRule(Path destination, SpashipMapping mapping) throws CustomException {
 
+        String siteVersion  = Objects.isNull(mapping.getWebsiteVersion())?"na":mapping.getWebsiteVersion();
+        String dateTimeZone = LocalDateTime.now()+"-"+ Calendar.getInstance().getTimeZone().getDisplayName();
         String htaccessContent = "<IfModule mod_rewrite.c>\n" +
                 "    RewriteEngine On\n" +
                 "    RewriteCond %{REQUEST_FILENAME} !-f\n" +
                 "    RewriteCond %{REQUEST_FILENAME} !-d\n" +
                 "    RewriteRule (.*) index.html\n" +
                 "    Header set X-Spaship-Single \"true\"\n" +
+                "    Header set X-Spaship-Deployed-on \""+ dateTimeZone +"\"\n" +
+                "    Header set X-Spaship-App-Version \""+ siteVersion +"\"\n" +
                 "</IfModule>";
 
         var absHtAccessFilePath = destination.toAbsolutePath().toString() + File.separatorChar + ".htaccess";
