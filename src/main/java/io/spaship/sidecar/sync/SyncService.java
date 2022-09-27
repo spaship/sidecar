@@ -1,11 +1,15 @@
 package io.spaship.sidecar.sync;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.runtime.StartupEvent;
 import io.spaship.sidecar.type.OperationException;
+import io.vertx.core.json.JsonObject;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.enterprise.event.Observes;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +30,20 @@ public class SyncService {
     private static final List<Timer> timers = new ArrayList<>();
     AtomicBoolean errorFlag = new AtomicBoolean(false);
 
+
+    void startup(@Observes StartupEvent startupEvent) throws JsonProcessingException {
+        LOG.info("reading sync from config");
+        String syncConfig = ConfigProvider.getConfig().getValue("sidecar.sync.config", String.class);
+        if(syncConfig.equalsIgnoreCase("na")){
+            LOG.info("sync config doesn't exists");
+            return;
+        }
+        LOG.info("mapping sync config into ConfigJsonWrapper");
+        ObjectMapper mapper = new ObjectMapper();
+        var config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
+        LOG.info("applying sync config");
+        init(config);
+    }
 
     public int getTasksLength(){
         return timers.size();
