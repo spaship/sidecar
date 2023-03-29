@@ -195,7 +195,7 @@ public class SyncService {
 
         try {
 
-            File htmlFile = new File(absHtmlFilePath);
+/*            File htmlFile = new File(absHtmlFilePath);
 
             // delete the html file if exists
             if(htmlFile.exists())
@@ -205,7 +205,7 @@ public class SyncService {
             var isFileCreated = htmlFile.createNewFile();
 
             if(!isFileCreated)
-                return;
+                return;*/
 
             var noCacheParam = ConfigProvider.getConfig()
                     .getValue("curl.nocache.param", String.class).equalsIgnoreCase("na")?
