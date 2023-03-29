@@ -13,7 +13,7 @@ class PredicateTest {
 
 
     SyncService syncService;
-    BiPredicate<String,String> isForwardSlashMissing = (subPath, sourceUrl) -> !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
+    BiPredicate<String, String> isForwardSlashMissing = (subPath, sourceUrl) -> !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
 
     @BeforeAll
     void setup() {
@@ -22,7 +22,7 @@ class PredicateTest {
 
 
     @Test
-    void predicate_when_fslash_in_subPath(){
+    void predicate_when_fslash_in_subPath() {
 
         String url = "https://access.redhat.com/services/chrome/header";
         String subPath = "/k";
@@ -37,7 +37,7 @@ class PredicateTest {
     }
 
     @Test
-    void predicate_when_fslash_in_url(){
+    void predicate_when_fslash_in_url() {
 
         String url = "https://access.redhat.com/services/chrome/header/";
         String subPath = "k";
@@ -53,7 +53,7 @@ class PredicateTest {
 
 
     @Test
-    void predicate_when_fslash_absent(){
+    void predicate_when_fslash_absent() {
 
         String url = "https://access.redhat.com/services/chrome/header";
         String subPath = "k";

@@ -102,7 +102,7 @@ public class RequestProcessor {
         if (Objects.isNull(spashipMeta))
             return opsBuilderCommon.status(0)
                     .errorMessage("failed to process spaship mapping, for more details check stacktrace of sidecar").build();
-        environment.setSpaContextPath(spashipMeta.first.replace(File.separator,"_"));
+        environment.setSpaContextPath(spashipMeta.first.replace(File.separator, "_"));
 
         //Determine absolute path, if contextPath is set to root folder then set absolute path as parent dir
         String absoluteSpaPath = computeAbsoluteDeploymentPath(spashipMeta.first);
@@ -125,7 +125,7 @@ public class RequestProcessor {
         // Copy files from temporary place to the target directory
         try {
             copySpa(status, sourcePath, destinationPath);
-            enforceHtAccessRule(destinationPath,spashipMeta.second);
+            enforceHtAccessRule(destinationPath, spashipMeta.second);
         } catch (CustomException e) {
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
@@ -133,7 +133,7 @@ public class RequestProcessor {
         // set response status based on target dir preparation status
         LOG.debug("status is {}", status);
 
-        switch (status){
+        switch (status) {
             case 1:
             case -1:
                 LOG.debug("It was an existing SPA");
@@ -204,16 +204,16 @@ public class RequestProcessor {
     //ToDO, this is required for fixing the virtual address redirection issue, find a better way to create .htaccess file
     private void enforceHtAccessRule(Path destination, SpashipMapping mapping) throws CustomException {
 
-        String siteVersion  = Objects.isNull(mapping.getWebsiteVersion())?"na":mapping.getWebsiteVersion();
-        String dateTimeZone = LocalDateTime.now()+"-"+ Calendar.getInstance().getTimeZone().getDisplayName();
+        String siteVersion = Objects.isNull(mapping.getWebsiteVersion()) ? "na" : mapping.getWebsiteVersion();
+        String dateTimeZone = LocalDateTime.now() + "-" + Calendar.getInstance().getTimeZone().getDisplayName();
         String htaccessContent = "<IfModule mod_rewrite.c>\n" +
                 "    RewriteEngine On\n" +
                 "    RewriteCond %{REQUEST_FILENAME} !-f\n" +
                 "    RewriteCond %{REQUEST_FILENAME} !-d\n" +
                 "    RewriteRule (.*) index.html\n" +
                 "    Header set X-Spaship-Single \"true\"\n" +
-                "    Header set X-Spaship-Deployed-on \""+ dateTimeZone +"\"\n" +
-                "    Header set X-Spaship-App-Version \""+ siteVersion +"\"\n" +
+                "    Header set X-Spaship-Deployed-on \"" + dateTimeZone + "\"\n" +
+                "    Header set X-Spaship-App-Version \"" + siteVersion + "\"\n" +
                 "</IfModule>";
 
         var absHtAccessFilePath = destination.toAbsolutePath().toString() + File.separatorChar + ".htaccess";
@@ -236,7 +236,7 @@ public class RequestProcessor {
     private String computeAbsoluteDeploymentPath(String contextPath) {
         var absoluteSpaPath = contextPath.equals(rootDirIdentifier) ?
                 parentDeploymentDirectory : parentDeploymentDirectory.concat(File.separator)
-                .concat(contextPath.replace(File.separator,"_"));
+                .concat(contextPath.replace(File.separator, "_"));
         LOG.debug("computed absoluteSpaPath is {}", absoluteSpaPath);
         return absoluteSpaPath;
     }

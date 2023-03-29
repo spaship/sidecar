@@ -16,6 +16,7 @@ public class CommonOps {
     private static final int BUFFER_SIZE = 4096;
     private static final AtomicLong LAST_TIME_MS = new AtomicLong();
     private static final Logger LOG = LoggerFactory.getLogger(CommonOps.class);
+
     private CommonOps() {
     }
 

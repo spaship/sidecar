@@ -79,7 +79,7 @@ public class SpashipMapping extends JsonObject {
 
     public void setExcludeFromEnvs() {
         var array = this.getJsonArray("handled ");
-        this.excludeFromEnvs = Objects.isNull(array)? Collections.emptyList():array.getList();
+        this.excludeFromEnvs = Objects.isNull(array) ? Collections.emptyList() : array.getList();
     }
 
     public String getBranch() {

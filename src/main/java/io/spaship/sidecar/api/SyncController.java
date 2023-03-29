@@ -16,8 +16,8 @@ import java.util.regex.Pattern;
 public class SyncController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncController.class);
-    private final SyncService syncService;
     private static final String RESPONSE_KEY = "status";
+    private final SyncService syncService;
 
 
     public SyncController() {
@@ -29,13 +29,13 @@ public class SyncController {
     @GET
     public String scheduleSync() {
 
-        if(syncService.getTasksLength() < 1)
+        if (syncService.getTasksLength() < 1)
             return "no sync record found";
 
         return "sync service is active";
     }
 
-    boolean isValidUrl(String url){
+    boolean isValidUrl(String url) {
         var regex = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
         Pattern p = Pattern.compile(regex);
         Matcher m = p.matcher(url);
@@ -48,9 +48,9 @@ public class SyncController {
     @Consumes(MediaType.TEXT_PLAIN)
     public String scheduleSync(String url) {
 
-        LOG.info("url is {}",url);
-        if(!isValidUrl(url))
-            return new JsonObject().put(RESPONSE_KEY,"request body not accepted").encodePrettily();
+        LOG.info("url is {}", url);
+        if (!isValidUrl(url))
+            return new JsonObject().put(RESPONSE_KEY, "request body not accepted").encodePrettily();
 
         try {
             boolean res = syncService.init(url);
@@ -60,10 +60,10 @@ public class SyncController {
         } catch (Exception e) {
             e.printStackTrace();
             return new JsonObject()
-                    .put(RESPONSE_KEY,"failed due to : ".concat(e.getMessage()))
+                    .put(RESPONSE_KEY, "failed due to : ".concat(e.getMessage()))
                     .encodePrettily();
         }
-        return new JsonObject().put(RESPONSE_KEY,"scheduled").encodePrettily();
+        return new JsonObject().put(RESPONSE_KEY, "scheduled").encodePrettily();
     }
 
     @POST
@@ -71,13 +71,13 @@ public class SyncController {
     @Consumes(MediaType.APPLICATION_JSON)
     public String scheduleSync(ConfigJsonWrapper configObject) {
 
-        LOG.info("request payload is  {}",configObject);
+        LOG.info("request payload is  {}", configObject);
         boolean res = syncService.init(configObject);
         if (!res)
             return new JsonObject()
-                    .put(RESPONSE_KEY,"something went wrong, please check the console for more details")
+                    .put(RESPONSE_KEY, "something went wrong, please check the console for more details")
                     .encodePrettily();
-        return new JsonObject().put(RESPONSE_KEY,"scheduled").encodePrettily();
+        return new JsonObject().put(RESPONSE_KEY, "scheduled").encodePrettily();
     }
 
     @Produces("text/plain")
@@ -86,7 +86,7 @@ public class SyncController {
     public String cancelSync() {
         syncService.cancelAllTasks();
         return new JsonObject()
-                .put(RESPONSE_KEY,"unscheduled all tasks")
+                .put(RESPONSE_KEY, "unscheduled all tasks")
                 .encodePrettily();
     }
 }

@@ -27,38 +27,38 @@ public class TargetEntry {
     private Destination dest;
 
 
-    public int getIntInterval(){
+    public int getIntInterval() {
         var a = this.interval
-                .replace("s","");
-        try{
+                .replace("s", "");
+        try {
             return Integer.parseInt(a);
-        }catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             return 0;
         }
     }
 
-    public List<String> getSourceSubPaths(){
-        if(Objects.isNull(source.getSubPaths()))
+    public List<String> getSourceSubPaths() {
+        if (Objects.isNull(source.getSubPaths()))
             return List.of();
         return Arrays.asList(source.getSubPaths());
     }
 
-    public void setSourceSubPaths(String[] subPaths){
+    public void setSourceSubPaths(String[] subPaths) {
         source.setSubPaths(subPaths);
     }
 
-    public String getSourceUrl(){
+    public String getSourceUrl() {
         return this.source.getUrl();
     }
 
-    public String getDestPath(){
+    public String getDestPath() {
         var transformedDestPath = dest.getPath().replace("/var/www/html",
                 ConfigProvider.getConfig().getValue("sidecar.spadir", String.class));
-        LOG.debug("transformed destination path is {}",transformedDestPath);
+        LOG.debug("transformed destination path is {}", transformedDestPath);
         return transformedDestPath;
     }
 
-    public String getDestFileName(){
+    public String getDestFileName() {
         return this.dest.getFilename();
     }
 

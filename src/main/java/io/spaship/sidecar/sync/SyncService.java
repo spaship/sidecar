@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.StartupEvent;
 import io.spaship.sidecar.type.OperationException;
-import io.vertx.core.json.JsonObject;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +11,8 @@ import org.slf4j.LoggerFactory;
 import javax.enterprise.event.Observes;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,27 +21,27 @@ import java.util.function.BiPredicate;
 public class SyncService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncService.class);
-    BiPredicate<String,String> isForwardSlashMissing = (subPath, sourceUrl) ->
-            !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
     private static final List<Timer> timers = new ArrayList<>();
+    BiPredicate<String, String> isForwardSlashMissing = (subPath, sourceUrl) ->
+            !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
     AtomicBoolean errorFlag = new AtomicBoolean(false);
 
 
     void startup(@Observes StartupEvent startupEvent) throws JsonProcessingException {
         LOG.info("reading sync from config");
         String syncConfig = ConfigProvider.getConfig().getValue("sidecar.sync.config", String.class);
-        if(syncConfig.equalsIgnoreCase("na")){
+        if (syncConfig.equalsIgnoreCase("na")) {
             LOG.info("sync config doesn't exists");
             return;
         }
         LOG.info("mapping sync config into ConfigJsonWrapper");
         ObjectMapper mapper = new ObjectMapper();
-        var config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
+        var config = mapper.readValue(syncConfig, ConfigJsonWrapper.class);
         LOG.info("applying sync config");
         init(config);
     }
 
-    public int getTasksLength(){
+    public int getTasksLength() {
         return timers.size();
     }
 
@@ -53,12 +49,12 @@ public class SyncService {
     public boolean init(String url) throws IOException {
         String syncConfig = readRemoteSyncConfig(url);
         ObjectMapper mapper = new ObjectMapper();
-        var config = mapper.readValue(syncConfig,ConfigJsonWrapper.class);
+        var config = mapper.readValue(syncConfig, ConfigJsonWrapper.class);
         return init(config);
     }
 
     public boolean init(ConfigJsonWrapper config) {
-        Objects.requireNonNull(config,"configObject not fond!");
+        Objects.requireNonNull(config, "configObject not fond!");
         cancelAllTasks();
         schedule(config.getTargetEntries());
 
@@ -77,49 +73,45 @@ public class SyncService {
         return syncConfig;
     }
 
-    private void schedule(List<TargetEntry> targetEntries){
+    private void schedule(List<TargetEntry> targetEntries) {
         targetEntries.forEach(this::trigger);
         LOG.info("all target entries are scheduled to know more check resource /sync");
     }
 
-    private void trigger(TargetEntry te){
+    private void trigger(TargetEntry te) {
 
         Timer timer = new Timer(te.getName());
         TimerTask task = new TimerTask() {
             public void run() {
                 updateResource(te);
-                LOG.debug("fetching target  {} and interval is set to {} ",te.getName(),te.getInterval());
+                LOG.debug("fetching target  {} and interval is set to {} ", te.getName(), te.getInterval());
             }
         };
 
         int interval = te.getIntInterval();
 
-        if( interval== 0){
-            timer.schedule(task,500L);
+        if (interval == 0) {
+            timer.schedule(task, 500L);
             return;
         }
 
 
-        timer.schedule(task,0,(interval* 1000L));
+        timer.schedule(task, 0, (interval * 1000L));
         timers.add(timer);
-        LOG.debug("added imer in the list the list length is {}",timers.size());
+        LOG.debug("added imer in the list the list length is {}", timers.size());
 
     }
 
 
-    public void cancelAllTasks(){
+    public void cancelAllTasks() {
         LOG.info("the length of timer is {}", timers.size());
         timers.forEach(timer -> {
             timer.cancel();
             timer.purge();
-            LOG.info("removed timer {}",timer);
+            LOG.info("removed timer {}", timer);
         });
         timers.clear();
     }
-
-
-
-
 
 
     public void updateResource(TargetEntry targetEntry) {
@@ -129,34 +121,33 @@ public class SyncService {
             targetEntry.setSourceSubPaths(new String[]{"/"});
 
         //inner logic of schedule
-        targetEntry.getSourceSubPaths().forEach(subPath ->{
+        targetEntry.getSourceSubPaths().forEach(subPath -> {
             var targetUrlParts = targetEntry.getSourceUrl().split("\\?");
             var targetUrl = targetEntry.getSourceUrl().concat(subPath);
 
-            if(isForwardSlashMissing.test(subPath,targetEntry.getSourceUrl()))
+            if (isForwardSlashMissing.test(subPath, targetEntry.getSourceUrl()))
                 targetUrl = targetEntry.getSourceUrl().concat("/").concat(subPath);
 
             var urlPartLength = targetUrlParts.length;
-            if(urlPartLength >2)
+            if (urlPartLength > 2)
                 LOG.warn("target url part length must not exceed 2, " +
-                        "something went wrong, targetEntry.getSourceUrl() is {}",targetEntry.getSourceUrl());
+                        "something went wrong, targetEntry.getSourceUrl() is {}", targetEntry.getSourceUrl());
 
-            if (urlPartLength >1){
-                if(isForwardSlashMissing.test(subPath,targetUrlParts[0])){
+            if (urlPartLength > 1) {
+                if (isForwardSlashMissing.test(subPath, targetUrlParts[0])) {
                     targetUrl = targetUrlParts[0].concat("/").concat(subPath).concat("?").concat(targetUrlParts[1]);
-                }else{
+                } else {
                     targetUrl = targetUrlParts[0].concat(subPath).concat("?").concat(targetUrlParts[1]);
                 }
             }
 
 
-
-            LOG.debug("targetUrl is {} and targetUrl length is {}",targetUrl,urlPartLength);
+            LOG.debug("targetUrl is {} and targetUrl length is {}", targetUrl, urlPartLength);
 
             var fullyQualifiedDestPath = targetEntry.getDestPath()
                     .concat(subPath);
             try {
-                copyAndReplace(targetUrl,fullyQualifiedDestPath,targetEntry.getDestFileName());
+                copyAndReplace(targetUrl, fullyQualifiedDestPath, targetEntry.getDestFileName());
             } catch (OperationException e) {
                 LOG.error(e.getMessage());
                 errorFlag.set(true);
@@ -178,19 +169,19 @@ public class SyncService {
         File file = new File(fullyQualifiedDestPath);
 
         // create target directories if not exists
-        if(!file.isDirectory()){
+        if (!file.isDirectory()) {
             try {
                 Files.createDirectories(Paths.get(fullyQualifiedDestPath));
             } catch (IOException e) {
                 throw new OperationException(
-                        String.format("failed to create directories recursively due to %s",e.getMessage())
-                        ,e);
+                        String.format("failed to create directories recursively due to %s", e.getMessage())
+                        , e);
             }
         }
 
 
         // compute  absolute html file path if target directory ends with a /
-        if(fullyQualifiedDestPath.substring(fullyQualifiedDestPath.length() - 1).equals("/"))
+        if (fullyQualifiedDestPath.substring(fullyQualifiedDestPath.length() - 1).equals("/"))
             absHtmlFilePath = fullyQualifiedDestPath.concat(fileName);
 
         try {
@@ -208,34 +199,33 @@ public class SyncService {
                 return;*/
 
             var noCacheParam = ConfigProvider.getConfig()
-                    .getValue("curl.nocache.param", String.class).equalsIgnoreCase("na")?
-                    null:ConfigProvider.getConfig().getValue("curl.nocache.param", String.class);
+                    .getValue("curl.nocache.param", String.class).equalsIgnoreCase("na") ?
+                    null : ConfigProvider.getConfig().getValue("curl.nocache.param", String.class);
             var proxyParam = ConfigProvider.getConfig()
-                    .getValue("curl.proxy.param", String.class).equalsIgnoreCase("na")?
-                    null:ConfigProvider.getConfig().getValue("curl.proxy.param", String.class);
+                    .getValue("curl.proxy.param", String.class).equalsIgnoreCase("na") ?
+                    null : ConfigProvider.getConfig().getValue("curl.proxy.param", String.class);
             var debugCurl = ConfigProvider.getConfig()
                     .getValue("curl.command.debug", String.class).equalsIgnoreCase("true");
 
             //execute curl command
-            var statusCodeOutcome = CurlUtility.with(fullyQualifiedDestPath,debugCurl)
-                    .apply(transformedTargetUrl,fileName,noCacheParam,proxyParam);
-            LOG.debug("curl return code is {}",statusCodeOutcome);
+            var statusCodeOutcome = CurlUtility.with(fullyQualifiedDestPath, debugCurl)
+                    .apply(transformedTargetUrl, fileName, noCacheParam, proxyParam);
+            LOG.debug("curl return code is {}", statusCodeOutcome);
 
         } catch (Exception e) {
             throw new OperationException(
-                    String.format("failed to create html file due to %s",e.getMessage())
-                    ,e);
+                    String.format("failed to create html file due to %s", e.getMessage())
+                    , e);
         }
 
 
     }
 
 
-
     private String replaceTrailingSlash(String targetUrl) {
         //TODO replace this condition with targetUrl.endsWith("/")
         boolean isTrailingSlashPresent = targetUrl.substring(targetUrl.length() - 1).equals("/");
-        if(isTrailingSlashPresent){
+        if (isTrailingSlashPresent) {
             targetUrl = targetUrl.substring(0, targetUrl.length() - 1);
             LOG.info("trailing slash found in the url and removed final targetUrl is {}", targetUrl);
         }

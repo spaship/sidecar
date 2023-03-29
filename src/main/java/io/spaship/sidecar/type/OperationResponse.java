@@ -26,24 +26,48 @@ public class OperationResponse {
         return this.environment;
     }
 
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
     public String getSideCarServiceUrl() {
         return this.sideCarServiceUrl;
+    }
+
+    public void setSideCarServiceUrl(String sideCarServiceUrl) {
+        this.sideCarServiceUrl = sideCarServiceUrl;
     }
 
     public int getStatus() {
         return this.status;
     }
 
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
     public String getMessage() {
         return this.message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public String getErrorMessage() {
         return this.errorMessage;
     }
 
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
     public String getOriginatedFrom() {
         return this.originatedFrom;
+    }
+
+    public void setOriginatedFrom(String originatedFrom) {
+        this.originatedFrom = originatedFrom;
     }
 
     @Override
@@ -128,29 +152,5 @@ public class OperationResponse {
                     + ", \"originatedFrom\":" + originatedFrom
                     + "}";
         }
-    }
-
-    public void setEnvironment(Environment environment) {
-        this.environment = environment;
-    }
-
-    public void setSideCarServiceUrl(String sideCarServiceUrl) {
-        this.sideCarServiceUrl = sideCarServiceUrl;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
-    public void setOriginatedFrom(String originatedFrom) {
-        this.originatedFrom = originatedFrom;
     }
 }
