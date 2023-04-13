@@ -21,7 +21,7 @@
 # docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/spaship-sidecar-jvm
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4 
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 
 ARG JAVA_PACKAGE=java-11-openjdk-headless
 ARG RUN_JAVA_VERSION=1.3.8
@@ -48,8 +48,11 @@ COPY --chown=1001 target/quarkus-app/*.jar /deployments/
 COPY --chown=1001 target/quarkus-app/app/ /deployments/app/
 COPY --chown=1001 target/quarkus-app/quarkus/ /deployments/quarkus/
 
+# Update ownership and permissions of the run-java.sh script
+RUN chown 1001:root /deployments/run-java.sh \
+    && chmod 540 /deployments/run-java.sh
+
 EXPOSE 8080
 USER 1001
 
 ENTRYPOINT [ "/deployments/run-java.sh" ]
-
