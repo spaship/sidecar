@@ -9,16 +9,16 @@ on:
       - 'qa'
       - 'fix/**'
       - 'feat/**'
-#    tags:
-#      - '*'
-#    paths:
-#      - '*'
-#  workflow_dispatch:
-#    inputs:
-#      version:
-#        description: Bump Version
-#        default: v1.0.0
-#        required: true
+  #    tags:
+  #      - '*'
+  #    paths:
+  #      - '*'
+  #  workflow_dispatch:
+  #    inputs:
+  #      version:
+  #        description: Bump Version
+  #        default: v1.0.0
+  #        required: true
   pull_request:
 
 jobs:
@@ -35,17 +35,17 @@ jobs:
       - uses: actions/checkout@v2
         name: Checkout action
 
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
-          java-version: 11
+          java-version: 17
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
-#      - name: Build Naive
-#        run: ./mvnw package -Pnative
+      #      - name: Build Naive
+      #        run: ./mvnw package -Pnative
 
       - name: Inject slug/short variables
         uses: rlespinasse/github-slug-action@v3.x

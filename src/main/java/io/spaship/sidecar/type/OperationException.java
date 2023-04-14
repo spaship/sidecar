@@ -1,6 +1,6 @@
 package io.spaship.sidecar.type;
 
-public class OperationException extends Exception{
+public class OperationException extends Exception {
 
 
     public OperationException() {

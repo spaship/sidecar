@@ -19,8 +19,8 @@ public class ConfigJsonWrapper {
     private AutoSync autosync;
 
 
-    public List<TargetEntry> getTargetEntries(){
-        if(Objects.isNull(autosync) || Objects.isNull(autosync.getTargetEntries()))
+    public List<TargetEntry> getTargetEntries() {
+        if (Objects.isNull(autosync) || Objects.isNull(autosync.getTargetEntries()))
             return Collections.emptyList();
         return Arrays.asList(autosync.getTargetEntries());
     }
