@@ -5,7 +5,6 @@ import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.sidecar.type.*;
-
 import io.spaship.sidecar.util.CommonOps;
 import io.spaship.sidecar.util.CustomException;
 import org.apache.commons.io.FileUtils;
@@ -22,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -61,6 +59,11 @@ public class RequestProcessor {
             .websiteVersion(websiteVersion)
             .build();
 
+    private static String formatSourceDirName(String source) {
+        if (!source.endsWith("/"))
+            source = source.concat("/");
+        return source;
+    }
 
     void onStart(@Observes StartupEvent ev) {
         validatePropertyFields();
@@ -81,7 +84,6 @@ public class RequestProcessor {
                 .item(() -> processFile(formData))
                 .runSubscriptionOn(executor);
     }
-
 
     // todo break into smaller methods, get rid of imperative code
     private OperationResponse processFile(FormData formData) {
@@ -128,8 +130,8 @@ public class RequestProcessor {
     }
 
     private OperationResponse handleFileOps(OperationResponse.OperationResponseBuilder opsBuilderCommon,
-                                              Tuple<String, SpashipMapping> spashipMeta, Path destinationPath,
-                                              int status, Path sourcePath) {
+                                            Tuple<String, SpashipMapping> spashipMeta, Path destinationPath,
+                                            int status, Path sourcePath) {
         try {
             var source = sourcePath.toString();
             var destination = destinationPath.toString();
@@ -137,16 +139,20 @@ public class RequestProcessor {
             rsync(source, destination);
             enforceHtAccessRule(destinationPath, spashipMeta.second);
         } catch (Exception e) {
-            LOG.error("something went wrong while processing the file handle ops : ",e);
+            LOG.error("something went wrong while processing the file handle ops : ", e);
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
         // set response status based on target dir preparation status
         LOG.debug("status is {}", status);
         switch (status) {
-            case 1, -1 -> {LOG.debug("It was an existing SPA");
-                opsBuilderCommon.status(2);}
-            case 0 -> {LOG.debug("It's a new SPA!");
-                opsBuilderCommon.status(1);}
+            case 1, -1 -> {
+                LOG.debug("It was an existing SPA");
+                opsBuilderCommon.status(2);
+            }
+            case 0 -> {
+                LOG.debug("It's a new SPA!");
+                opsBuilderCommon.status(1);
+            }
             default -> LOG.info("unknown status");
         }
 
@@ -154,12 +160,6 @@ public class RequestProcessor {
         LOG.info("ops response is {}", opsResponse);
 
         return opsResponse;
-    }
-
-    private static String formatSourceDirName(String source) {
-        if(!source.endsWith("/"))
-            source = source.concat("/");
-        return source;
     }
 
     private void rsync(String source, String destination) throws IOException, InterruptedException {
@@ -276,7 +276,6 @@ public class RequestProcessor {
 
         return new Tuple<>(contextPath, spaMapping);
     }
-
 
 
     private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
