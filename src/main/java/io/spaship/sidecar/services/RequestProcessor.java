@@ -1,10 +1,10 @@
 package io.spaship.sidecar.services;
 
+
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.sidecar.type.*;
-import io.spaship.sidecar.util.CheckedException;
 import io.spaship.sidecar.util.CommonOps;
 import io.spaship.sidecar.util.CustomException;
 import org.apache.commons.io.FileUtils;
@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -60,6 +59,11 @@ public class RequestProcessor {
             .websiteVersion(websiteVersion)
             .build();
 
+    private static String formatSourceDirName(String source) {
+        if (!source.endsWith("/"))
+            source = source.concat("/");
+        return source;
+    }
 
     void onStart(@Observes StartupEvent ev) {
         validatePropertyFields();
@@ -80,7 +84,6 @@ public class RequestProcessor {
                 .item(() -> processFile(formData))
                 .runSubscriptionOn(executor);
     }
-
 
     // todo break into smaller methods, get rid of imperative code
     private OperationResponse processFile(FormData formData) {
@@ -123,35 +126,53 @@ public class RequestProcessor {
 
         var sourcePath = Paths.get(unZippedPath);
         // Copy files from temporary place to the target directory
+        return handleFileOps(opsBuilderCommon, spashipMeta, destinationPath, status, sourcePath);
+    }
+
+    private OperationResponse handleFileOps(OperationResponse.OperationResponseBuilder opsBuilderCommon,
+                                            Tuple<String, SpashipMapping> spashipMeta, Path destinationPath,
+                                            int status, Path sourcePath) {
         try {
-            copySpa(status, sourcePath, destinationPath);
+            var source = sourcePath.toString();
+            var destination = destinationPath.toString();
+            source = formatSourceDirName(source);
+            rsync(source, destination);
             enforceHtAccessRule(destinationPath, spashipMeta.second);
-        } catch (CustomException e) {
+        } catch (Exception e) {
+            LOG.error("something went wrong while processing the file handle ops : ", e);
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
-
         // set response status based on target dir preparation status
         LOG.debug("status is {}", status);
-
         switch (status) {
-            case 1:
-            case -1:
+            case 1, -1 -> {
                 LOG.debug("It was an existing SPA");
                 opsBuilderCommon.status(2);
-                break;
-            case 0:
+            }
+            case 0 -> {
                 LOG.debug("It's a new SPA!");
                 opsBuilderCommon.status(1);
-                break;
-            default:
-                LOG.info("unknown status");
-                break;
+            }
+            default -> LOG.info("unknown status");
         }
 
         var opsResponse = opsBuilderCommon.build();
         LOG.info("ops response is {}", opsResponse);
 
         return opsResponse;
+    }
+
+    private void rsync(String source, String destination) throws IOException, InterruptedException {
+        // do not use `-a` as it tries to preserve file ownership and permissions leading to permission issues
+        ProcessBuilder processBuilder = new ProcessBuilder("rsync", "-rlS", "--delete", source, destination);
+        Process process = processBuilder.start();
+        int exitCode = process.waitFor();
+
+        if (exitCode == 0) {
+            LOG.info("Synchronization completed successfully.");
+        } else {
+            LOG.error("Synchronization failed with exit code: {}", exitCode);
+        }
     }
 
     private boolean deleteSPA(String contextPath, Path destinationPath) {
@@ -184,22 +205,6 @@ public class RequestProcessor {
                 .anyMatch(e -> ((Boolean) e.get("exclude")));
     }
 
-    private void copySpa(int status, Path sourcePath, Path destinationPath) throws CustomException {
-        try (var pathStream = Files.walk(sourcePath)) {
-            pathStream.forEach(source -> {
-                try {
-                    copyOps(parentDeploymentDirectory, status,
-                            sourcePath, destinationPath, source);
-                } catch (Exception e) {
-                    throw new CheckedException(e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            LOG.error("error in copySpa ", e);
-            throw new CustomException(e.getMessage().concat(" in sidecar"));
-        }
-
-    }
 
     //ToDO, this is required for fixing the virtual address redirection issue, find a better way to create .htaccess file
     private void enforceHtAccessRule(Path destination, SpashipMapping mapping) throws CustomException {
@@ -273,25 +278,6 @@ public class RequestProcessor {
     }
 
 
-    private void copyOps(String parentDeploymentDirectory, int status, Path sourcePath, Path destinationPath,
-                         Path source) throws IOException {
-        // To avoid DirectoryNotEmptyException
-        if (status == -1 && destinationPath.resolve(sourcePath.relativize(source)).toAbsolutePath().toString()
-                .equalsIgnoreCase(parentDeploymentDirectory)) {
-            LOG.debug("copying into root dir and skipping the first iteration");
-            return;
-        }
-        copy(source, destinationPath.resolve(sourcePath.relativize(source)));
-    }
-
-    private void copy(Path source, Path dest) throws IOException {
-        //LOG.debug("copying {} to {}",source.toAbsolutePath(),dest.toAbsolutePath());
-        if (new File(dest.toString()).isDirectory())
-            FileUtils.deleteDirectory(new File(dest.toString()));
-        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
-        //LOG.debug("Copy DOne!");
-    }
-
     private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
         var isNestedContextPath = contextPath.contains(File.separator);
         LOG.debug("nested context path detection status {}", isNestedContextPath);
@@ -303,7 +289,6 @@ public class RequestProcessor {
         }
 
         if (isSpaDirExists(dirName)) {
-            deleteDirectory(dirName);
             return 1;
         }
         LOG.debug("directory does not exists");

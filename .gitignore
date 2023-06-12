@@ -40,3 +40,5 @@ nb-configuration.xml
 .env
 sidecar.iml
 build-local
+
+local-build.bat
