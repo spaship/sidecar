@@ -17,13 +17,19 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 public class SyncService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncService.class);
     private static final List<Timer> timers = new ArrayList<>();
-    BiPredicate<String, String> isForwardSlashMissing = (subPath, sourceUrl) ->
-            !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
+    Predicate<String> hasSubPath = subPath ->Objects.nonNull(subPath) &&
+            !(subPath.isEmpty() || subPath.isBlank()) && !subPath.equals("/");
+    BiPredicate<String, String> isForwardSlashMissing = (subPath, sourceUrl) -> {
+        if(!hasSubPath.test(subPath))
+            return false;
+        return !(subPath.startsWith("/") || sourceUrl.endsWith("/"));
+    };
     AtomicBoolean errorFlag = new AtomicBoolean(false);
 
 
@@ -125,7 +131,7 @@ public class SyncService {
             var targetUrlParts = targetEntry.getSourceUrl().split("\\?");
             var targetUrl = targetEntry.getSourceUrl().concat(subPath);
 
-            if (isForwardSlashMissing.test(subPath, targetEntry.getSourceUrl()))
+            if (hasSubPath.test(subPath) && isForwardSlashMissing.test(subPath, targetEntry.getSourceUrl()))
                 targetUrl = targetEntry.getSourceUrl().concat("/").concat(subPath);
 
             var urlPartLength = targetUrlParts.length;
@@ -137,6 +143,8 @@ public class SyncService {
                 if (isForwardSlashMissing.test(subPath, targetUrlParts[0])) {
                     targetUrl = targetUrlParts[0].concat("/").concat(subPath).concat("?").concat(targetUrlParts[1]);
                 } else {
+                    if(!hasSubPath.test(subPath))
+                        subPath="";
                     targetUrl = targetUrlParts[0].concat(subPath).concat("?").concat(targetUrlParts[1]);
                 }
             }

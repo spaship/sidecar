@@ -42,3 +42,6 @@ sidecar.iml
 build-local
 
 local-build.bat
+local-build.sh
+local-git-recon.bat
+git-rebase-upstream.bat
