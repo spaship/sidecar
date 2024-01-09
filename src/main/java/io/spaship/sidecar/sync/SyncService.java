@@ -8,7 +8,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
