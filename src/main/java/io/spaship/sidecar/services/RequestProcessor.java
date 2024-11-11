@@ -175,6 +175,20 @@ public class RequestProcessor {
         LOG.info("RSync processBuilder startpoint 3");
         int exitCode = process.waitFor();
         LOG.info("RSync processBuilder startpoint 4");
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+            
+            String line;
+            while ((line = reader.readLine()) != null) {
+                LOG.info("RSync output: {}", line);
+            }
+            
+            while ((line = errorReader.readLine()) != null) {
+                LOG.error("RSync error: {}", line);
+            }
+        }
+
         if (exitCode == 0) {
             LOG.info("Synchronization completed successfully.");
         } else {
