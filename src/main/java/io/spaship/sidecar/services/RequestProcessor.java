@@ -245,6 +245,47 @@ public class RequestProcessor {
         LOG.debug("computed absoluteSpaPath is {}", absoluteSpaPath);
         return absoluteSpaPath;
     }
+  private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
+        var isNestedContextPath = contextPath.contains(File.separator);
+        LOG.debug("nested context path detection status {}", isNestedContextPath);
+
+        // new status for identification of deployment in root directory
+        if (dirName.equalsIgnoreCase(parentDirectory)) {
+            LOG.debug("deploying spa in root directory");
+            return -1;
+        }
+
+        if (isSpaDirExists(dirName)) {
+            return 1;
+        }
+        LOG.debug("directory does not exists");
+        if (isNestedContextPath) {
+            var recursiveDirectoryCreateStatus = new File(dirName).mkdirs();
+            LOG.debug("recursive dir create status is {}", recursiveDirectoryCreateStatus);
+        } else {
+            var directoryCreateStatus = new File(dirName).mkdir();
+            LOG.debug("dir create status is {}", directoryCreateStatus);
+        }
+        return 0;
+    }
+
+ private void deleteDirectory(String dirName) {
+        var dir = new File(dirName);
+        var deleted = false;
+        try {
+            FileUtils.cleanDirectory(dir);
+            LOG.debug("Directory cleaned");
+            FileUtils.deleteDirectory(dir);
+            LOG.debug("Directory deleted");
+            deleted = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOG.error("Error file delete {} , on {}", e.getMessage(), e.getLocalizedMessage());
+        }
+
+        LOG.debug("dir {} delete status is {}", dirName, deleted);
+    }
+
 
     private Tuple<String, SpashipMapping> extractSpashipMeta(String unZippedPath) {
         // Extract and load SpashipMapping
@@ -278,29 +319,7 @@ public class RequestProcessor {
     }
 
 
-    private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
-        var isNestedContextPath = contextPath.contains(File.separator);
-        LOG.debug("nested context path detection status {}", isNestedContextPath);
-
-        // new status for identification of deployment in root directory
-        if (dirName.equalsIgnoreCase(parentDirectory)) {
-            LOG.debug("deploying spa in root directory");
-            return -1;
-        }
-
-        if (isSpaDirExists(dirName)) {
-            return 1;
-        }
-        LOG.debug("directory does not exists");
-        if (isNestedContextPath) {
-            var recursiveDirectoryCreateStatus = new File(dirName).mkdirs();
-            LOG.debug("recursive dir create status is {}", recursiveDirectoryCreateStatus);
-        } else {
-            var directoryCreateStatus = new File(dirName).mkdir();
-            LOG.debug("dir create status is {}", directoryCreateStatus);
-        }
-        return 0;
-    }
+  
 
     private boolean isSpaDirExists(String dirName) {
         var dir = new File(dirName);
@@ -309,23 +328,7 @@ public class RequestProcessor {
         return exists;
     }
 
-    private void deleteDirectory(String dirName) {
-        var dir = new File(dirName);
-        var deleted = false;
-        try {
-            FileUtils.cleanDirectory(dir);
-            LOG.debug("Directory cleaned");
-            FileUtils.deleteDirectory(dir);
-            LOG.debug("Directory deleted");
-            deleted = true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOG.error("Error file delete {} , on {}", e.getMessage(), e.getLocalizedMessage());
-        }
-
-        LOG.debug("dir {} delete status is {}", dirName, deleted);
-    }
-
+   
     private void deleteContentOfRootDir(Path rootPath) throws IOException {
         try (var f = Files.list(rootPath)) {
             f.filter(p -> !p.toFile().isDirectory() && !p.toFile().isHidden())
