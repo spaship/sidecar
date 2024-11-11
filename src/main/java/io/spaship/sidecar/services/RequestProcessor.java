@@ -135,11 +135,15 @@ public class RequestProcessor {
         try {
             var source = sourcePath.toString();
             var destination = destinationPath.toString();
+            LOG.info("source is {}", source);
+            LOG.info("destination is {}", destination);
             source = formatSourceDirName(source);
+            LOG.info("formatted source is {}", source);
             rsync(source, destination);
+            LOG.info("RSync Completed source is ");
             enforceHtAccessRule(destinationPath, spashipMeta.second);
         } catch (Exception e) {
-            LOG.error("something went wrong while processing the file handle ops : ", e);
+            LOG.info("something went wrong while processing the file handle ops : ", e);
             return opsBuilderCommon.status(0).errorMessage(e.getMessage()).build();
         }
         // set response status based on target dir preparation status
@@ -164,14 +168,17 @@ public class RequestProcessor {
 
     private void rsync(String source, String destination) throws IOException, InterruptedException {
         // do not use `-a` as it tries to preserve file ownership and permissions leading to permission issues
+        LOG.info("RSync processBuilder startpoint 1");
         ProcessBuilder processBuilder = new ProcessBuilder("rsync", "-rlS", "--delete", source, destination);
+        LOG.info("RSync processBuilder startpoint 2");
         Process process = processBuilder.start();
+        LOG.info("RSync processBuilder startpoint 3");
         int exitCode = process.waitFor();
-
+        LOG.info("RSync processBuilder startpoint 4");
         if (exitCode == 0) {
             LOG.info("Synchronization completed successfully.");
         } else {
-            LOG.error("Synchronization failed with exit code: {}", exitCode);
+            LOG.info("Synchronization failed with exit code: {}", exitCode);
         }
     }
 
