@@ -80,7 +80,15 @@ public class RequestProcessor {
         LOG.debug("field validation end");
     }
 
+    private boolean rsyncInProgress = false;
+
     public Uni<OperationResponse> handleFileUpload(FormData formData) {
+        if (rsyncInProgress) {
+            LOG.info("rsync is already in progress for this operation, skipping.");
+        }
+    
+        rsyncInProgress = true;
+
         return Uni.createFrom()
                 .item(() -> processFile(formData))
                 .runSubscriptionOn(executor);
@@ -88,6 +96,7 @@ public class RequestProcessor {
 
     // todo break into smaller methods, get rid of imperative code
     private OperationResponse processFile(FormData formData) {
+        LOG.info("Processing file for formData: {}", formData);
 
         OperationResponse.OperationResponseBuilder opsBuilderCommon = OperationResponse.builder()
                 .environment(environment)
@@ -96,10 +105,13 @@ public class RequestProcessor {
 
         // Unzip the incoming dist file and return the location of the unzipped file
         var zipFilePath = formData.getfilePath().toString();
+        LOG.info("zipFilePath : {}", zipFilePath);
         String unZippedPath = unzipDist(zipFilePath);
+        LOG.info("unZippedPath : {}", unZippedPath);
         if (unZippedPath == null)
             return opsBuilderCommon.status(0)
                     .errorMessage("something went wrong, null pointer exception, check console for stacktrace").build();
+
 
         //extract context path and spaship meta file
         var spashipMeta = extractSpashipMeta(unZippedPath);
@@ -137,7 +149,7 @@ public class RequestProcessor {
             var source = sourcePath.toString();
             LOG.info("source : {}", source);
             var destination = destinationPath.toString();
-            LOG.info("destination : {}", source);
+            LOG.info("destination : {}", destinationPath);
             source = formatSourceDirName(source);
             LOG.info("formatSourceDirName : {}", source);
             rsync(source, destination);
@@ -169,7 +181,12 @@ public class RequestProcessor {
     private void rsync(String source, String destination) throws IOException, InterruptedException {
         // do not use `-a` as it tries to preserve file ownership and permissions leading to permission issues
         LOG.info("rsync process started");
-        ProcessBuilder processBuilder = new ProcessBuilder("rsync", "-rlS", "--delete", source, destination);
+        ProcessBuilder processBuilder = new ProcessBuilder(
+            "rsync",
+             "-rlS",
+              "--delete",
+              source,
+              destination);
         LOG.info("ProcessBuilder initialized");
         Process process = processBuilder.start();
         LOG.info("Process started");
