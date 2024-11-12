@@ -362,4 +362,33 @@ public class RequestProcessor {
         }
     }
 
+    private void copyFilesUsingNIO(String source, String destination) throws IOException {
+    Path sourcePath = Paths.get(source);
+    Path destinationPath = Paths.get(destination);
+
+    // Ensure the destination directory exists
+    if (Files.notExists(destinationPath)) {
+        Files.createDirectories(destinationPath);
+    }
+
+    try (Stream<Path> paths = Files.walk(sourcePath)) {
+        paths.forEach(sourceFile -> {
+            try {
+                Path destinationFile = destinationPath.resolve(sourcePath.relativize(sourceFile));
+                if (Files.isDirectory(sourceFile)) {
+                    if (Files.notExists(destinationFile)) {
+                        Files.createDirectory(destinationFile);
+                    }
+                } else {
+                    Files.copy(sourceFile, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException e) {
+                LOG.error("Error copying file: {}", sourceFile, e);
+            }
+        });
+    }
+}
+
+
+
 }
