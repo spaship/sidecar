@@ -18,6 +18,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,7 +29,6 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
-
 
 @ApplicationScoped
 public class RequestProcessor {
@@ -174,6 +175,22 @@ public class RequestProcessor {
         LOG.info("Process started");
         int exitCode = process.waitFor();
         LOG.info("Process completed with exit the code {}", exitCode);
+        /* This block reads and logs the output and error streams from the rsync process.
+        The standard output (success messages) is logged using INFO level,
+        while the error output (error messages) is logged using ERROR level.
+        It helps in debugging and monitoring the rsync operation by capturing any messages or errors generated during the execution.
+        */
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                LOG.info("rsync message : {}", line);
+            }
+            
+            while ((line = errorReader.readLine()) != null) {
+                LOG.error("rsync error : {}", line);
+            }
+        }
         if (exitCode == 0) {
             LOG.info("Synchronization completed successfully.");
         } else {
@@ -212,36 +229,7 @@ public class RequestProcessor {
     }
 
 
-    //ToDO, this is required for fixing the virtual address redirection issue, find a better way to create .htaccess file
-    private void enforceHtAccessRule(Path destination, SpashipMapping mapping) throws CustomException {
-
-        String siteVersion = Objects.isNull(mapping.getWebsiteVersion()) ? "na" : mapping.getWebsiteVersion();
-        String dateTimeZone = LocalDateTime.now() + "-" + Calendar.getInstance().getTimeZone().getDisplayName();
-        String htaccessContent = "<IfModule mod_rewrite.c>\n" +
-                "    RewriteEngine On\n" +
-                "    RewriteCond %{REQUEST_FILENAME} !-f\n" +
-                "    RewriteCond %{REQUEST_FILENAME} !-d\n" +
-                "    RewriteRule (.*) index.html\n" +
-                "    Header set X-Spaship-Single \"true\"\n" +
-                "    Header set X-Spaship-Deployed-on \"" + dateTimeZone + "\"\n" +
-                "    Header set X-Spaship-App-Version \"" + siteVersion + "\"\n" +
-                "</IfModule>";
-
-        var absHtAccessFilePath = destination.toAbsolutePath().toString() + File.separatorChar + ".htaccess";
-        File htaccessFile = new File(absHtAccessFilePath);
-        LOG.info("the htaccess file path is {}", absHtAccessFilePath);
-        try {
-            if (!htaccessFile.createNewFile())
-                return;
-            FileWriter fstream = new FileWriter(absHtAccessFilePath);
-            try (BufferedWriter out = new BufferedWriter(fstream)) {
-                out.write(htaccessContent);
-            }
-        } catch (IOException e) {
-            throw new CustomException(e.getMessage().concat(",during htaccess ops"));
-        }
-
-    }
+    
 
 
     private String computeAbsoluteDeploymentPath(String contextPath) {
@@ -284,27 +272,39 @@ public class RequestProcessor {
     }
 
 
-     private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
-        var isNestedContextPath = contextPath.contains(File.separator);
-        LOG.debug("nested context path detection status {}", isNestedContextPath);
-        // new status for identification of deployment in root directory
-        if (dirName.equalsIgnoreCase(parentDirectory)) {
-            LOG.debug("deploying spa in root directory");
-            return -1;
+
+    //ToDO, this is required for fixing the virtual address redirection issue, find a better way to create .htaccess file
+    private void enforceHtAccessRule(Path destination, SpashipMapping mapping) throws CustomException {
+
+        String siteVersion = Objects.isNull(mapping.getWebsiteVersion()) ? "na" : mapping.getWebsiteVersion();
+        String dateTimeZone = LocalDateTime.now() + "-" + Calendar.getInstance().getTimeZone().getDisplayName();
+        String htaccessContent = "<IfModule mod_rewrite.c>\n" +
+                "    RewriteEngine On\n" +
+                "    RewriteCond %{REQUEST_FILENAME} !-f\n" +
+                "    RewriteCond %{REQUEST_FILENAME} !-d\n" +
+                "    RewriteRule (.*) index.html\n" +
+                "    Header set X-Spaship-Single \"true\"\n" +
+                "    Header set X-Spaship-Deployed-on \"" + dateTimeZone + "\"\n" +
+                "    Header set X-Spaship-App-Version \"" + siteVersion + "\"\n" +
+                "</IfModule>";
+
+        var absHtAccessFilePath = destination.toAbsolutePath().toString() + File.separatorChar + ".htaccess";
+        File htaccessFile = new File(absHtAccessFilePath);
+        LOG.info("the htaccess file path is {}", absHtAccessFilePath);
+        try {
+            if (!htaccessFile.createNewFile())
+                return;
+            FileWriter fstream = new FileWriter(absHtAccessFilePath);
+            try (BufferedWriter out = new BufferedWriter(fstream)) {
+                out.write(htaccessContent);
+            }
+        } catch (IOException e) {
+            throw new CustomException(e.getMessage().concat(",during htaccess ops"));
         }
-        if (isSpaDirExists(dirName)) {
-            return 1;
-        }
-        LOG.debug("directory does not exists");
-        if (isNestedContextPath) {
-            var recursiveDirectoryCreateStatus = new File(dirName).mkdirs();
-            LOG.debug("recursive dir create status is {}", recursiveDirectoryCreateStatus);
-        } else {
-            var directoryCreateStatus = new File(dirName).mkdir();
-            LOG.debug("dir create status is {}", directoryCreateStatus);
-        }
-        return 0;
+
     }
+
+    
 
     private boolean isSpaDirExists(String dirName) {
         var dir = new File(dirName);
@@ -330,6 +330,28 @@ public class RequestProcessor {
         LOG.debug("dir {} delete status is {}", dirName, deleted);
     }
 
+     private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
+        var isNestedContextPath = contextPath.contains(File.separator);
+        LOG.debug("nested context path detection status {}", isNestedContextPath);
+        // new status for identification of deployment in root directory
+        if (dirName.equalsIgnoreCase(parentDirectory)) {
+            LOG.debug("deploying spa in root directory");
+            return -1;
+        }
+        if (isSpaDirExists(dirName)) {
+            return 1;
+        }
+        LOG.debug("directory does not exists");
+        if (isNestedContextPath) {
+            var recursiveDirectoryCreateStatus = new File(dirName).mkdirs();
+            LOG.debug("recursive dir create status is {}", recursiveDirectoryCreateStatus);
+        } else {
+            var directoryCreateStatus = new File(dirName).mkdir();
+            LOG.debug("dir create status is {}", directoryCreateStatus);
+        }
+        return 0;
+    }
+    
     private void deleteContentOfRootDir(Path rootPath) throws IOException {
         try (var f = Files.list(rootPath)) {
             f.filter(p -> !p.toFile().isDirectory() && !p.toFile().isHidden())
