@@ -134,8 +134,11 @@ public class RequestProcessor {
                                             int status, Path sourcePath) {
         try {
             var source = sourcePath.toString();
+            LOG.info("source : {}", source);
             var destination = destinationPath.toString();
+            LOG.info("destination : {}", source);
             source = formatSourceDirName(source);
+            LOG.info("formatSourceDirName : {}", source);
             rsync(source, destination);
             enforceHtAccessRule(destinationPath, spashipMeta.second);
         } catch (Exception e) {
@@ -164,10 +167,13 @@ public class RequestProcessor {
 
     private void rsync(String source, String destination) throws IOException, InterruptedException {
         // do not use `-a` as it tries to preserve file ownership and permissions leading to permission issues
+        LOG.info("rsync process started");
         ProcessBuilder processBuilder = new ProcessBuilder("rsync", "-rlS", "--delete", source, destination);
+        LOG.info("ProcessBuilder initialized");
         Process process = processBuilder.start();
+        LOG.info("Process started");
         int exitCode = process.waitFor();
-
+        LOG.info("Process completed with exit the code {}", exitCode);
         if (exitCode == 0) {
             LOG.info("Synchronization completed successfully.");
         } else {
@@ -278,16 +284,14 @@ public class RequestProcessor {
     }
 
 
-    private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
+     private int prepareDeploymentDirectory(String dirName, String parentDirectory, String contextPath) {
         var isNestedContextPath = contextPath.contains(File.separator);
         LOG.debug("nested context path detection status {}", isNestedContextPath);
-
         // new status for identification of deployment in root directory
         if (dirName.equalsIgnoreCase(parentDirectory)) {
             LOG.debug("deploying spa in root directory");
             return -1;
         }
-
         if (isSpaDirExists(dirName)) {
             return 1;
         }
@@ -309,7 +313,7 @@ public class RequestProcessor {
         return exists;
     }
 
-    private void deleteDirectory(String dirName) {
+ private void deleteDirectory(String dirName) {
         var dir = new File(dirName);
         var deleted = false;
         try {
