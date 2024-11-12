@@ -183,13 +183,17 @@ public class RequestProcessor {
         LOG.info("rsync process started");
         ProcessBuilder processBuilder = new ProcessBuilder(
             "rsync",
-             "-rlS",
-              "--delete",
-              source,
-              destination);
-        LOG.info("ProcessBuilder initialized");
+            "-rlS",
+            "--inplace",
+            "--stats",
+            "--compress",
+            "--delete",
+            source,
+            destination
+            );
+        LOG.info("ProcessBuilder initialized {}", processBuilder);
         Process process = processBuilder.start();
-        LOG.info("Process started");
+        LOG.info("Process started {}", process);
         int exitCode = process.waitFor();
         LOG.info("Process completed with exit the code {}", exitCode);
         /* This block reads and logs the output and error streams from the rsync process.
